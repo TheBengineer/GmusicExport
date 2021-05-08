@@ -95,6 +95,14 @@ with open(os.path.join(music_path, "music-uploads-metadata.csv"), "r", encoding=
                                     tags[tag_version][key] = new
                                     changed = True
 
+                    # Clean up 'eng' added to comment by mp3-decode
+                    for tag_version in tags:
+                        if 'comment' in tags[tag_version] and tags[tag_version]["comment"] is not None:
+                            while len(tags[tag_version]["comment"]) > 3 and tags[tag_version]["comment"][:4] == "enge":
+                                tags[tag_version]["comment"] = tags[tag_version]["comment"][3:]
+                                changed = True
+                            if tags[tag_version]["comment"] == "eng" or tags[tag_version]["comment"] == "e":
+                                tags[tag_version]["comment"] = ""
                     # If there is definitely only one file, set data to match Google
                     if len(mp3_filenames) == 1:
                         if "song" in tags["ID3TagV2"] and cleanup(tags["ID3TagV2"]["song"]) != title:
