@@ -77,8 +77,8 @@ with open(os.path.join(music_path, "music-uploads-metadata.csv"), "r", encoding=
                         for bd in bad_data:
                             if bd in tags["ID3TagV1"]["song"]:
                                 fix_me = True
-                                print(title)
-                                print(tags["ID3TagV1"]["song"])
+                                #print(title)
+                                #print(tags["ID3TagV1"]["song"])
                         if fix_me:
                             for tag_version in tags:
                                 for key in tags[tag_version]:
@@ -121,10 +121,45 @@ with open(os.path.join(music_path, "music-uploads-metadata.csv"), "r", encoding=
                                 changed = True
 
                     if changed:
-                        print("old", old_tags)
-                        print("new", tags)
+                        #print("old", old_tags)
+                        #print("new", tags)
+                        mp3.set_version(VERSION_BOTH)
+                        for key in tags["ID3TagV2"]:
+                            if tags["ID3TagV2"][key] is not None:
+                                if key == "song":
+                                    mp3.song = tags["ID3TagV2"][key]
+                                elif key == "artist":
+                                    mp3.artist = tags["ID3TagV2"][key]
+                                elif key == "album":
+                                    mp3.album = tags["ID3TagV2"][key]
+                                elif key == "track":
+                                    try:
+                                        track_no = int(tags["ID3TagV2"][key])
+                                        mp3.track = track_no
+                                    except ValueError:
+                                        mp3.set_version(VERSION_2)
+                                        mp3.track = tags["ID3TagV2"][key]
+                                        mp3.set_version(VERSION_BOTH)
+                                elif key == "genre":
+                                    mp3.set_version(VERSION_2)
+                                    mp3.genre = tags["ID3TagV2"][key]
+                                    mp3.set_version(VERSION_BOTH)
+                                elif key == "year":
+                                    mp3.year = tags["ID3TagV2"][key]
+                                elif key == "comment":
+                                    mp3.comment = tags["ID3TagV2"][key]
+                                elif key == "band":
+                                    mp3.band = tags["ID3TagV2"][key]
+                                elif key == "url":
+                                    mp3.url = tags["ID3TagV2"][key]
+                                elif key == "copyright":
+                                    mp3.copyright = tags["ID3TagV2"][key]
+                                elif key == "composer":
+                                    mp3.composer = tags["ID3TagV2"][key]
+                                elif key == "publisher":
+                                    mp3.publisher = tags["ID3TagV2"][key]
                         mp3.save()
-
+                        break
                         pass
                     else:
                         # print("--------------")
