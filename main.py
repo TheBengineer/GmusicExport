@@ -10,15 +10,16 @@ takeout_path = "Takeout\YouTube and YouTube Music\music-uploads"
 music_path = os.path.join(music_root, takeout_path)
 
 def cleanup(dirty_text):
-    clean = dirty_text
-    fix = [[":", "_"],
-           ["'", "_"],
-           ['"', "_"],
-           ["/", "_"],
-           [";", "_"], ]
-    for a, b in fix:
-        clean = clean.replace(a, b)
-    return clean[:50]
+    if isinstance(dirty_text, str):
+        clean = dirty_text
+        fix = [[":", "_"],
+               ["'", "_"],
+               ['"', "_"],
+               ["/", "_"],
+               [";", "_"], ]
+        for a, b in fix:
+            clean = clean.replace(a, b)
+        return clean
 
 
 start_time = time.time()
@@ -88,23 +89,27 @@ with open(os.path.join(music_path, "music-uploads-metadata.csv"), "r", encoding=
                             old = tags[tag_version][key]
                             if isinstance(old, str):
                                 new = old.strip()
+                                new = new.replace("\x00", "")
                                 if new != old:
                                     # print(f"{new}|")
                                     # print(f"{old}|")
                                     tags[tag_version][key] = new
                                     changed = True
 
-                    # If there is definitely only one file
+                    # If there is definitely only one file, set data to match Google
                     if len(mp3_filenames) == 1:
-                        if "song" in tags["ID3TagV2"] and tags["ID3TagV2"]["song"] != title:
-                            print(tags["ID3TagV2"]["song"])
-                            print(title)
-                        if "album" in tags["ID3TagV2"] and tags["ID3TagV2"]["album"] != album:
-                            print(tags["ID3TagV2"]["album"])
-                            print(album)
-                        if "artist" in tags["ID3TagV2"] and tags["ID3TagV2"]["artist"] != artist:
-                            print(tags["ID3TagV2"]["artist"])
-                            print(artist)
+                        if "song" in tags["ID3TagV2"] and cleanup(tags["ID3TagV2"]["song"]) != title:
+                            # print("Old Title", tags["ID3TagV2"]["song"])
+                            # print("New Title", title)
+                            tags["ID3TagV2"]["song"] = title
+                        if "album" in tags["ID3TagV2"] and cleanup(tags["ID3TagV2"]["album"]) != album:
+                            # print("Old album", tags["ID3TagV2"]["album"])
+                            # print("New album", album)
+                            tags["ID3TagV2"]["album"] = album
+                        if "artist" in tags["ID3TagV2"] and cleanup(tags["ID3TagV2"]["artist"]) != artist:
+                            # print("Old artist", tags["ID3TagV2"]["artist"])
+                            # print("New artist", artist)
+                            tags["ID3TagV2"]["artist"] = artist
 
                     # Copy data from V2 to V1
                     if "ID3TagV2" in tags and "ID3TagV1" in tags and tags["ID3TagV2"]:
@@ -116,7 +121,7 @@ with open(os.path.join(music_path, "music-uploads-metadata.csv"), "r", encoding=
                     if changed:
                         # print("old", old_tags)
                         # print("new", tags)
-                        # mp3.save()
+                        mp3.save()
 
                         pass
                     else:
@@ -136,4 +141,3 @@ with open(os.path.join(music_path, "music-uploads-metadata.csv"), "r", encoding=
             else:
                 pass
                 # Do something with the duplicate files.
-            break
