@@ -1,8 +1,6 @@
 import os
 
-music_root = "E:\Music"
-takeout_path = "Takeout\YouTube and YouTube Music\music-uploads"
-music_path = os.path.join(music_root, takeout_path)
+from config import music_path
 
 artist_folders = [f for f in os.listdir(music_path) if os.path.isdir(os.path.join(music_path, f))]
 

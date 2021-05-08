@@ -4,9 +4,7 @@ import time
 
 from mp3_tagger import MP3File, VERSION_2, VERSION_BOTH
 
-music_root = "E:\Music"
-takeout_path = "Takeout\YouTube and YouTube Music\music-uploads"
-music_path = os.path.join(music_root, takeout_path)
+from config import music_path
 
 def cleanup(dirty_text):
     if isinstance(dirty_text, str):
