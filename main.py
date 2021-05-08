@@ -2,10 +2,8 @@ import csv
 import os
 import time
 
-from mutagen.mp3 import MP3_length
 
-audio = MP3("example.mp3")
-print(audio.info.length)
+
 
 from mp3_tagger import MP3File, VERSION_2, VERSION_BOTH
 

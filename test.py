@@ -1,7 +1,18 @@
+import os
 from mp3_tagger import MP3File, VERSION_BOTH, VERSION_2
+from mutagen.mp3 import EasyMP3 as MP3
+
+from config import music_path
 
 # Create MP3File instance.
-mp3 = MP3File("E:\\Music\\Takeout\\YouTube and YouTube Music\\music-uploads\\Silent Night(1).mp3")
+filename = os.path.join(music_path, "Silent Night(1).mp3")
+mp3 = MP3File(filename)
+
+
+audio = MP3(filename)
+print(audio.info.length)
+
+
 
 tags = mp3.get_tags()
 print(tags)
