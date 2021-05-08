@@ -77,6 +77,8 @@ with open(os.path.join(music_path, "music-uploads-metadata.csv"), "r", encoding=
                         for bd in bad_data:
                             if bd in tags["ID3TagV1"]["song"]:
                                 fix_me = True
+                                print(title)
+                                print(tags["ID3TagV1"]["song"])
                         if fix_me:
                             for tag_version in tags:
                                 for key in tags[tag_version]:
@@ -119,8 +121,8 @@ with open(os.path.join(music_path, "music-uploads-metadata.csv"), "r", encoding=
                                 changed = True
 
                     if changed:
-                        # print("old", old_tags)
-                        # print("new", tags)
+                        print("old", old_tags)
+                        print("new", tags)
                         mp3.save()
 
                         pass
