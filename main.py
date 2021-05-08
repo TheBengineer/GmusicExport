@@ -20,6 +20,7 @@ def cleanup(dirty_text):
         for a, b in fix:
             clean = clean.replace(a, b)
         return clean
+    return dirty_text
 
 
 start_time = time.time()
@@ -42,7 +43,7 @@ with open(os.path.join(music_path, "music-uploads-metadata.csv"), "r", encoding=
             title = cleanup(title)
             album = cleanup(album)
             artist = cleanup(artist)
-            mp3_filenames = [s for s in mp3_files if title[:40] in s]  # Some titles got chopped to ~45 characters long.
+            mp3_filenames = [s for s in mp3_files if title[:40].lower() in s.lower()]  # Some titles got chopped to ~45 characters long.
 
             # Print Status every second
             if time.time() - last_time > 1:
@@ -76,9 +77,9 @@ with open(os.path.join(music_path, "music-uploads-metadata.csv"), "r", encoding=
                         for key in tags["ID3TagV1"]:
                             if tags["ID3TagV1"][key] is not None and isinstance(tags["ID3TagV1"][key], str) and len(tags["ID3TagV1"][key]):
                                 first_char = tags["ID3TagV1"][key][0]
-                                if first_char * 5 in tags["ID3TagV1"][key]:  # Look for repeated characters. Clear data if found.
-                                    tags["ID3TagV1"][key] = " "
-                                    tags["ID3TagV2"][key] = " "
+                                if first_char * 4 in tags["ID3TagV1"][key]:  # Look for repeated characters. Clear data if found.
+                                    tags["ID3TagV1"][key] = ""
+                                    tags["ID3TagV2"][key] = ""
                                     changed = True
 
                     # Clean up trailing whitespace
@@ -89,8 +90,8 @@ with open(os.path.join(music_path, "music-uploads-metadata.csv"), "r", encoding=
                                 new = old.strip()
                                 new = new.replace("\x00", "")
                                 if new != old:
-                                    # print(f"{new}|")
-                                    # print(f"{old}|")
+                                    print(f"{new}|")
+                                    print(f"{old}|")
                                     tags[tag_version][key] = new
                                     changed = True
 
@@ -99,22 +100,43 @@ with open(os.path.join(music_path, "music-uploads-metadata.csv"), "r", encoding=
                         if "song" in tags["ID3TagV2"] and cleanup(tags["ID3TagV2"]["song"]) != title:
                             # print("Old Title", tags["ID3TagV2"]["song"])
                             # print("New Title", title)
+                            if tags["ID3TagV2"]["song"]:
+                                wait = True
                             tags["ID3TagV2"]["song"] = title
                         if "album" in tags["ID3TagV2"] and cleanup(tags["ID3TagV2"]["album"]) != album:
                             # print("Old album", tags["ID3TagV2"]["album"])
                             # print("New album", album)
+                            if tags["ID3TagV2"]["album"]:
+                                wait = True
                             tags["ID3TagV2"]["album"] = album
                         if "artist" in tags["ID3TagV2"] and cleanup(tags["ID3TagV2"]["artist"]) != artist:
                             # print("Old artist", tags["ID3TagV2"]["artist"])
                             # print("New artist", artist)
+                            if tags["ID3TagV2"]["artist"]:
+                                wait = True
                             tags["ID3TagV2"]["artist"] = artist
 
                     # Copy data from V2 to V1
                     if "ID3TagV2" in tags and "ID3TagV1" in tags and tags["ID3TagV2"]:
                         for key in tags["ID3TagV2"]:
                             if key in keys_map:
-                                tags["ID3TagV1"][keys_map[key]] = tags["ID3TagV2"][key]
-                                changed = True
+                                if tags["ID3TagV2"][key]:
+                                    if key in ['artist', 'album', 'song', 'comment']:
+                                        old = tags["ID3TagV1"][keys_map[key]]
+                                        new = tags["ID3TagV2"][key][:30]
+                                        if old != new:
+                                            changed = True
+                                            tags["ID3TagV1"][keys_map[key]] = tags["ID3TagV2"][key]
+                                    elif key == 'track':
+                                        old = tags["ID3TagV1"][keys_map[key]]
+                                        new = None
+                                        try:
+                                            new = int(tags["ID3TagV2"][key])
+                                        except ValueError:
+                                            pass
+                                        if new is not None and old != new:
+                                            changed = True
+                                            tags["ID3TagV1"][keys_map[key]] = new
 
                     if changed:
                         print(mp3_filename)
@@ -165,15 +187,17 @@ with open(os.path.join(music_path, "music-uploads-metadata.csv"), "r", encoding=
                         # print(tags)
                         pass
 
-            if len(mp3_filenames) == 1:
-                pass
 
-                # TODO determine if use V1 or V2
-                # print(title)
-                # print(tags)
-                # print("------------------")
-                # mp3.album = 'some title..'
-                # del mp3.album
-            else:
-                pass
-                # Do something with the duplicate files.
+
+                if len(mp3_filenames) == 1:
+                    pass
+
+                    # TODO determine if use V1 or V2
+                    # print(title)
+                    # print(tags)
+                    # print("------------------")
+                    # mp3.album = 'some title..'
+                    # del mp3.album
+                else:
+                    pass
+                    # Do something with the duplicate files.
