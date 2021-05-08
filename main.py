@@ -71,19 +71,15 @@ with open(os.path.join(music_path, "music-uploads-metadata.csv"), "r", encoding=
                         for key in tags[tag_version]:
                             old_tags[tag_version][key] = tags[tag_version][key]
 
+                    # Clean up songs with junk data
                     if "ID3TagV1" in tags and "song" in tags["ID3TagV1"] and tags["ID3TagV1"]["song"]:
-                        bad_data = ["UUUU", "ЄЄЄЄ", "ªªªª"]
-                        fix_me = False
-                        for bd in bad_data:
-                            if bd in tags["ID3TagV1"]["song"]:
-                                fix_me = True
-                                #print(title)
-                                #print(tags["ID3TagV1"]["song"])
-                        if fix_me:
-                            for tag_version in tags:
-                                for key in tags[tag_version]:
-                                    tags[tag_version][key] = ""
-                            changed = True
+                        for key in tags["ID3TagV1"]:
+                            if tags["ID3TagV1"][key] is not None and isinstance(tags["ID3TagV1"][key], str) and len(tags["ID3TagV1"][key]):
+                                first_char = tags["ID3TagV1"][key][0]
+                                if first_char * 5 in tags["ID3TagV1"][key]:  # Look for repeated characters. Clear data if found.
+                                    tags["ID3TagV1"][key] = " "
+                                    tags["ID3TagV2"][key] = " "
+                                    changed = True
 
                     # Clean up trailing whitespace
                     for tag_version in tags:
@@ -121,8 +117,9 @@ with open(os.path.join(music_path, "music-uploads-metadata.csv"), "r", encoding=
                                 changed = True
 
                     if changed:
-                        #print("old", old_tags)
-                        #print("new", tags)
+                        print(mp3_filename)
+                        print("old", old_tags)
+                        print("new", tags)
                         mp3.set_version(VERSION_BOTH)
                         for key in tags["ID3TagV2"]:
                             if tags["ID3TagV2"][key] is not None:
@@ -133,8 +130,11 @@ with open(os.path.join(music_path, "music-uploads-metadata.csv"), "r", encoding=
                                 elif key == "album":
                                     mp3.album = tags["ID3TagV2"][key]
                                 elif key == "track":
+                                    track_no = tags["ID3TagV2"][key]
+                                    if len(track_no) > 2 and track_no[-2] == "/" and track_no[-1] == "0":
+                                        track_no = track_no[0:-2]
                                     try:
-                                        track_no = int(tags["ID3TagV2"][key])
+                                        track_no = int(track_no)
                                         mp3.track = track_no
                                     except ValueError:
                                         mp3.set_version(VERSION_2)
@@ -159,7 +159,6 @@ with open(os.path.join(music_path, "music-uploads-metadata.csv"), "r", encoding=
                                 elif key == "publisher":
                                     mp3.publisher = tags["ID3TagV2"][key]
                         mp3.save()
-                        break
                         pass
                     else:
                         # print("--------------")
