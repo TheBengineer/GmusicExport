@@ -1,13 +1,13 @@
 import csv
 import os
 import time
+import re
 
-
-
-
-from mp3_tagger import MP3File, VERSION_2, VERSION_BOTH
+import mutagen
+from mutagen.mp3 import EasyMP3 as MP3
 
 from config import music_path
+
 
 def cleanup(dirty_text):
     if isinstance(dirty_text, str):
@@ -33,19 +33,51 @@ keys_map = {'artist': 'artist', 'album': 'album', 'song': 'song', 'track': 'trac
 processed_files = []
 ambiguous_files = []
 
+# Load Metadata
 with open(os.path.join(music_path, "music-uploads-metadata.csv"), "r", encoding='utf-8') as music_metadata_file:
     music_metadata_reader = csv.reader(music_metadata_file)
     music_metadata = [md for md in music_metadata_reader]
 
-files_dict = {filename: [] for filename in mp3_files}
+# Generate a dictionary of all files
+files_dict = {filename: {"metadata": [], "tags": {}, "duration": 0.0} for filename in mp3_files}
 
+# Load durations from all files.
+for md_index, mp3_filename in enumerate(mp3_files):
+    now = time.time()
+    if now - last_time > .5:
+        percent = (float(md_index) / len(mp3_files)) * 100.0
+        bar = f"[{'#' * int(percent / 2.0)}{'-' * int((100 - percent) / 2.0)}]"
+        guess = time.gmtime((now - last_time) / ((len(mp3_files) - last_index) / (md_index - last_index)))
+        guess_time = time.strftime('%M:%S', guess)
+        run_time = time.strftime('%M:%S', time.gmtime(now - start_time))
+        print(f"{bar} {md_index}/{len(mp3_files)} [{percent:0.1f}%] {md_index - last_index}/s {run_time}/{guess_time} ")
+        last_time = time.time()
+        last_index = md_index
+    try:
+        mp3_data = MP3(os.path.join(music_path, mp3_filename))
+        files_dict[mp3_filename]["duration"] = mp3_data.info.length
+        tag_data = mp3_data.ID3.items(mp3_data)
+        for field, data in tag_data:
+            files_dict[mp3_filename]["tags"][field] = data[-1]
+    except mutagen.mp3.HeaderNotFoundError:
+        pass  # Skip non MP3 Files
+
+# Load Metadata
 for metadata in music_metadata:
     title, album, artist, duration = metadata
-    mp3_filenames = [s for s in mp3_files if title[:40].lower() in s.lower()]
+    title = cleanup(title)
+    try:
+        duration = int(duration)
+    except ValueError:
+        duration = 0
+    search_title = re.findall("[\dA-Za-z ]*", title)[0]
+    mp3_filenames = [s for s in mp3_files if search_title.lower() in s.lower()]
+    if len(mp3_filenames) < 1:
+        asdf = True
+    durations = {files_dict[mp3_filename]["duration"]: mp3_filename for mp3_filename in mp3_filenames}
+    percentages = sorted([[abs((t_duration - duration) / t_duration), durations[t_duration]] for t_duration in durations if t_duration])
     for mp3_filename in mp3_filenames:
-        files_dict[mp3_filename].append(metadata)
-
-
+        files_dict[mp3_filename]["metadata"].append(metadata)
 
 for md_index, metadata in enumerate(music_metadata):
     # print(metadata)
@@ -56,12 +88,13 @@ for md_index, metadata in enumerate(music_metadata):
     mp3_filenames = [s for s in mp3_files if title[:40].lower() in s.lower()]  # Some titles got chopped to ~45 characters long.
 
     # Print Status every second
-    if time.time() - last_time > 1:
+    now = time.time()
+    if now - last_time > 1:
         percent = (float(md_index) / len(music_metadata)) * 100.0
         bar = f"[{'#' * int(percent / 2.0)}{'-' * int((100 - percent) / 2.0)}]"
-        guess = time.gmtime((len(music_metadata) - last_index) / (md_index - last_index))
+        guess = time.gmtime((now - last_time) / ((len(music_metadata) - last_index) / (md_index - last_index)))
         guess_time = time.strftime('%M:%S', guess)
-        run_time = time.strftime('%M:%S', time.gmtime(time.time() - start_time))
+        run_time = time.strftime('%M:%S', time.gmtime(now - start_time))
         print(f"{bar} {md_index}/{len(music_metadata)} [{percent:0.1f}%] {md_index - last_index}/s {run_time}/{guess_time} ")
         last_time = time.time()
         last_index = md_index

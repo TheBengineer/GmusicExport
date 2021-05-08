@@ -14,4 +14,7 @@ for artist_folder_name in artist_folders:
         for mp3_filename in mp3_files:
             mp3_file = os.path.join(album_folder, mp3_filename)
             os.rename(mp3_file, os.path.join(music_path, mp3_filename))
-
+    mp3_files = [f for f in os.listdir(artist_folder) if os.path.isfile(os.path.join(artist_folder, f))]
+    for mp3_filename in mp3_files:
+        mp3_file = os.path.join(artist_folder, mp3_filename)
+        os.rename(mp3_file, os.path.join(music_path, mp3_filename))
