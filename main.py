@@ -1,9 +1,8 @@
-from mp3_tagger import MP3File, VERSION_1, VERSION_2, VERSION_BOTH
-import os
 import csv
+import os
 import time
 
-
+from mp3_tagger import MP3File, VERSION_2, VERSION_BOTH
 
 music_root = "E:\Music"
 takeout_path = "Takeout\YouTube and YouTube Music\music-uploads"
@@ -31,6 +30,7 @@ keysv1 = ['artist', 'album', 'song', 'track', 'genre', 'year', 'comment']
 keysv2 = ['artist', 'album', 'song', 'track', 'genre', 'year', 'band', 'comment', "composer", "copyright", "publisher", "url"]
 keys_map = {'artist': 'artist', 'album': 'album', 'song': 'song', 'track': 'track', 'genre': 'genre', 'year': 'year', 'comment': 'comment', }
 processed_files = []
+ambiguous_files = []
 
 with open(os.path.join(music_path, "music-uploads-metadata.csv"), "r", encoding='utf-8') as music_metadata_file:
     with open(os.path.join(music_path, "metadata_backup.csv"), "w", encoding='utf-8') as music_metadata_backup:
@@ -88,10 +88,12 @@ with open(os.path.join(music_path, "music-uploads-metadata.csv"), "r", encoding=
                             old = tags[tag_version][key]
                             if isinstance(old, str):
                                 new = old.strip()
-                                new = new.replace("\x00", "")
+                                badchar = ["\x00", "\n", "\r"]
+                                for bchar in badchar:
+                                    new = new.replace(bchar, "")
                                 if new != old:
-                                    print(f"{new}|")
-                                    print(f"{old}|")
+                                    #print(f"{new}|")
+                                    #print(f"{old}|")
                                     tags[tag_version][key] = new
                                     changed = True
 
@@ -109,20 +111,14 @@ with open(os.path.join(music_path, "music-uploads-metadata.csv"), "r", encoding=
                         if "song" in tags["ID3TagV2"] and cleanup(tags["ID3TagV2"]["song"]) != title:
                             # print("Old Title", tags["ID3TagV2"]["song"])
                             # print("New Title", title)
-                            if tags["ID3TagV2"]["song"]:
-                                wait = True
                             tags["ID3TagV2"]["song"] = title
                         if "album" in tags["ID3TagV2"] and cleanup(tags["ID3TagV2"]["album"]) != album:
                             # print("Old album", tags["ID3TagV2"]["album"])
                             # print("New album", album)
-                            if tags["ID3TagV2"]["album"]:
-                                wait = True
                             tags["ID3TagV2"]["album"] = album
                         if "artist" in tags["ID3TagV2"] and cleanup(tags["ID3TagV2"]["artist"]) != artist:
                             # print("Old artist", tags["ID3TagV2"]["artist"])
                             # print("New artist", artist)
-                            if tags["ID3TagV2"]["artist"]:
-                                wait = True
                             tags["ID3TagV2"]["artist"] = artist
 
                     # Copy data from V2 to V1
@@ -148,9 +144,9 @@ with open(os.path.join(music_path, "music-uploads-metadata.csv"), "r", encoding=
                                             tags["ID3TagV1"][keys_map[key]] = new
 
                     if changed:
-                        print(mp3_filename)
-                        print("old", old_tags)
-                        print("new", tags)
+                        # print(mp3_filename)
+                        # print("old", old_tags)
+                        # print("new", tags)
                         mp3.set_version(VERSION_BOTH)
                         for key in tags["ID3TagV2"]:
                             if tags["ID3TagV2"][key] is not None:
@@ -196,17 +192,22 @@ with open(os.path.join(music_path, "music-uploads-metadata.csv"), "r", encoding=
                         # print(tags)
                         pass
 
-
-
+                # If there is a single file:
                 if len(mp3_filenames) == 1:
-                    pass
+                    if artist and album:
+                        artist_path = os.path.join(music_path, artist)
+                        album_path = os.path.join(music_path, artist, album)
 
-                    # TODO determine if use V1 or V2
-                    # print(title)
-                    # print(tags)
-                    # print("------------------")
-                    # mp3.album = 'some title..'
-                    # del mp3.album
+                        if not os.path.exists(artist_path):
+                            os.mkdir(artist_path)
+                        if not os.path.exists(album_path):
+                            os.mkdir(album_path)
+                        os.rename(os.path.join(music_path, mp3_file), os.path.join(album_path, mp3_file))
                 else:
-                    pass
+                    ambiguous_files.append(mp3_file)
+                    dup_folder = os.path.join(music_path, "Duplicates")
+                    if not os.path.exists(dup_folder):
+                        os.mkdir(dup_folder)
+                    if os.path.exists(os.path.join(music_path, mp3_file)):
+                        os.rename(os.path.join(music_path, mp3_file), os.path.join(dup_folder, mp3_file))
                     # Do something with the duplicate files.
