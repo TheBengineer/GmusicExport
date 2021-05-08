@@ -49,7 +49,7 @@ for md_index, mp3_filename in enumerate(mp3_files):
     if now - last_time > .5:
         percent = (float(md_index) / len(mp3_files)) * 100.0
         bar = f"[{'#' * int(percent / 2.0)}{'-' * int((100 - percent) / 2.0)}]"
-        guess = time.gmtime((now - last_time) / ((len(mp3_files) - last_index) / (md_index - last_index)))
+        guess = time.gmtime(((len(mp3_files) - last_index) / (md_index - last_index)) / (now - last_time))
         guess_time = time.strftime('%M:%S', guess)
         run_time = time.strftime('%M:%S', time.gmtime(now - start_time))
         print(f"{bar} {md_index}/{len(mp3_files)} [{percent:0.1f}%] {md_index - last_index}/s {run_time}/{guess_time} ")
@@ -64,23 +64,47 @@ for md_index, mp3_filename in enumerate(mp3_files):
     except mutagen.mp3.HeaderNotFoundError:
         pass  # Skip non MP3 Files
 
-# Load Metadata
-for metadata in music_metadata:
+# Match files to metadata
+start_time = time.time()
+for md_index, metadata in enumerate(music_metadata):
     title, album, artist, duration = metadata
-    title = cleanup(title)
     try:
-        duration = int(duration)
+        duration = float(duration)
     except ValueError:
         duration = 0
-    search_title = re.findall("[\dA-Za-z ]*", title)[0]
-    mp3_filenames = sorted([[fuzzy(s[:-4].lower(), search_title[:30].lower(), ratio_calc=True), s] for s in mp3_files], reverse=True)
-    print(title, mp3_filenames[:min(3, len(mp3_filenames))])
-    if len(mp3_filenames) < 1:
-        asdf = True
-    # durations = {files_dict[mp3_filename]["duration"]: mp3_filename for fuzz, mp3_filename in mp3_filenames}
-    # percentages = sorted([[abs((t_duration - duration) / t_duration), durations[t_duration]] for t_duration in durations if t_duration])
-    # for fuzz, mp3_filename in mp3_filenames:
-    #    files_dict[mp3_filename]["metadata"].append(metadata)
+    search_title = cleanup(title).lower()
+
+    presorted = set()
+    for word in search_title.split(" "):
+        if len(word) > 3:
+            for s in mp3_files:
+                if word in s.lower():
+                    presorted.add(s)
+    if len(presorted) == 1:
+        files_dict[presorted.pop()]["metadata"].append(metadata)
+    else:
+        possible_files = {s: 1 - fuzzy(s[:-4].lower(), search_title[:30].lower(), ratio_calc=True) for s in presorted}
+        # print(title, possible_files[:min(3, len(possible_files))])
+        if len(possible_files) < 1:
+            asdf = True
+        # durations = {files_dict[mp3_filename]["duration"]: mp3_filename for fuzz, mp3_filename in mp3_filenames}
+        percentages = {mp3_filename: abs((files_dict[mp3_filename]["duration"] - duration) / files_dict[mp3_filename]["duration"]) for mp3_filename in possible_files if
+                       files_dict[mp3_filename]["duration"]}
+
+        decision_matrix = sorted([[percentages[filename] * possible_files[filename], filename] for filename in possible_files], reverse=True)
+        print(title, decision_matrix)
+        # for fuzz, mp3_filename in mp3_filenames:
+        #    files_dict[mp3_filename]["metadata"].append(metadata)
+        now = time.time()
+        if now - last_time > 1:
+            percent = (float(md_index) / len(music_metadata)) * 100.0
+            bar = f"[{'#' * int(percent / 2.0)}{'-' * int((100 - percent) / 2.0)}]"
+            guess = time.gmtime(((len(music_metadata) - last_index) / (md_index - last_index)) / (now - last_time))
+            guess_time = time.strftime('%M:%S', guess)
+            run_time = time.strftime('%M:%S', time.gmtime(now - start_time))
+            print(f"{bar} {md_index}/{len(music_metadata)} [{percent:0.1f}%] {md_index - last_index}/s {run_time}/{guess_time} ")
+            last_time = time.time()
+            last_index = md_index
 
 for md_index, metadata in enumerate(music_metadata):
     # print(metadata)
@@ -88,14 +112,14 @@ for md_index, metadata in enumerate(music_metadata):
     title = cleanup(title)
     album = cleanup(album)
     artist = cleanup(artist)
-    mp3_filenames = [s for s in mp3_files if title[:40].lower() in s.lower()]  # Some titles got chopped to ~45 characters long.
+    possible_files = [s for s in mp3_files if title[:40].lower() in s.lower()]  # Some titles got chopped to ~45 characters long.
 
     # Print Status every second
     now = time.time()
     if now - last_time > 1:
         percent = (float(md_index) / len(music_metadata)) * 100.0
         bar = f"[{'#' * int(percent / 2.0)}{'-' * int((100 - percent) / 2.0)}]"
-        guess = time.gmtime((now - last_time) / ((len(music_metadata) - last_index) / (md_index - last_index)))
+        guess = time.gmtime(((len(music_metadata) - last_index) / (md_index - last_index)) / (now - last_time))
         guess_time = time.strftime('%M:%S', guess)
         run_time = time.strftime('%M:%S', time.gmtime(now - start_time))
         print(f"{bar} {md_index}/{len(music_metadata)} [{percent:0.1f}%] {md_index - last_index}/s {run_time}/{guess_time} ")
