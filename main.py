@@ -38,6 +38,7 @@ ambiguous_files = []
 # Load Metadata
 with open(os.path.join(music_path, "music-uploads-metadata.csv"), "r", encoding='utf-8') as music_metadata_file:
     music_metadata_reader = csv.reader(music_metadata_file)
+    headers = music_metadata_reader.__next__()
     music_metadata = [md for md in music_metadata_reader]
 
 # Generate a dictionary of all files
@@ -83,14 +84,15 @@ for md_index, metadata in enumerate(music_metadata):
     if len(presorted) == 1:
         files_dict[presorted.pop()]["metadata"].append(metadata)
     else:
-        possible_files = {s: 1 - fuzzy(s[:-4].lower(), search_title[:30].lower(), ratio_calc=True) for s in presorted}
+        possible_files = {s: fuzzy(s[:-4].lower(), search_title[:30].lower(), ratio_calc=True) for s in presorted}
+        sorted_files = sorted([[a, b] for b, a in possible_files.items()])
         # print(title, possible_files[:min(3, len(possible_files))])
         if len(possible_files) < 1:
             asdf = True
         # durations = {files_dict[mp3_filename]["duration"]: mp3_filename for fuzz, mp3_filename in mp3_filenames}
-        percentages = {mp3_filename: abs((files_dict[mp3_filename]["duration"] - duration) / files_dict[mp3_filename]["duration"]) for mp3_filename in possible_files if
+        percentages = {mp3_filename: 5 - abs((files_dict[mp3_filename]["duration"] - duration)) for mp3_filename in possible_files if
                        files_dict[mp3_filename]["duration"]}
-
+        sorted_percent = sorted([[a, b] for b, a in percentages.items()])
         decision_matrix = sorted([[percentages[filename] * possible_files[filename], filename] for filename in possible_files], reverse=True)
         print(title, decision_matrix)
         # for fuzz, mp3_filename in mp3_filenames:
