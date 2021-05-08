@@ -6,6 +6,8 @@ import re
 import mutagen
 from mutagen.mp3 import EasyMP3 as MP3
 
+from helpers import levenshtein_ratio_and_distance as fuzzy
+
 from config import music_path
 
 
@@ -71,13 +73,14 @@ for metadata in music_metadata:
     except ValueError:
         duration = 0
     search_title = re.findall("[\dA-Za-z ]*", title)[0]
-    mp3_filenames = [s for s in mp3_files if search_title.lower() in s.lower()]
+    mp3_filenames = sorted([[fuzzy(s[:-4].lower(), search_title[:30].lower(), ratio_calc=True), s] for s in mp3_files], reverse=True)
+    print(title, mp3_filenames[:min(3, len(mp3_filenames))])
     if len(mp3_filenames) < 1:
         asdf = True
-    durations = {files_dict[mp3_filename]["duration"]: mp3_filename for mp3_filename in mp3_filenames}
-    percentages = sorted([[abs((t_duration - duration) / t_duration), durations[t_duration]] for t_duration in durations if t_duration])
-    for mp3_filename in mp3_filenames:
-        files_dict[mp3_filename]["metadata"].append(metadata)
+    # durations = {files_dict[mp3_filename]["duration"]: mp3_filename for fuzz, mp3_filename in mp3_filenames}
+    # percentages = sorted([[abs((t_duration - duration) / t_duration), durations[t_duration]] for t_duration in durations if t_duration])
+    # for fuzz, mp3_filename in mp3_filenames:
+    #    files_dict[mp3_filename]["metadata"].append(metadata)
 
 for md_index, metadata in enumerate(music_metadata):
     # print(metadata)
