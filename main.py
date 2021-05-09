@@ -47,6 +47,7 @@ with open(os.path.join(music_path, "music-uploads-metadata.csv"), "r", encoding=
 files_dict = {filename: {"metadata": [], "tags": {}, "duration": 0.0} for filename in mp3_files}
 
 # Load durations from all files.
+print("LOADING FILE DURATIONS")
 if "metadata" not in datastore:
     datastore["metadata"] = {}
     for md_index, mp3_filename in enumerate(mp3_files):
@@ -60,6 +61,7 @@ if "metadata" not in datastore:
             print(f"{bar} {md_index}/{len(mp3_files)} [{percent:0.1f}%] {md_index - last_index}/s {run_time}/{guess_time} ")
             last_time = time.time()
             last_index = md_index
+            datastore.sync()
         try:
             mp3_data = MP3(os.path.join(music_path, mp3_filename))
             files_dict[mp3_filename]["duration"] = mp3_data.info.length
@@ -75,50 +77,111 @@ else:
         duration, tags = datastore['metadata'][filename]
         files_dict[filename]["duration"] = duration
 
+print("CREATING METADATA <-> FILE MATCH MATRIX")
 # Match files to metadata
-start_time = time.time()
-for md_index in music_metadata:
-    title, album, artist, duration = music_metadata[md_index]
-    try:
-        duration = float(duration)
-    except ValueError:
-        duration = 0
-    search_title = cleanup(title).lower()
+if "matrix_complete" not in datastore:
+    if "matrix" not in datastore:
+        datastore["matrix"] = {}
+    start_time = time.time()
+    for md_index in music_metadata:
+        title, album, artist, duration = music_metadata[md_index]
+        try:
+            duration = float(duration)
+        except ValueError:
+            duration = 0
+        search_title = cleanup(title).lower()
 
-    presorted = set()
-    for word in search_title.split(" "):
-        if len(word) > 3:
-            for s in mp3_files:
-                if word in s.lower():
-                    presorted.add(s)
-    if len(presorted) == 1:
-        decision_matrix[md_index] = {presorted.pop(): 5.0}
-    else:
-        possible_files = {s: fuzzy(s[:-4].lower(), search_title[:30].lower(), ratio_calc=True) for s in presorted}
-        # sorted_files = sorted([[a, b] for b, a in possible_files.items()])
-        # print(title, possible_files[:min(3, len(possible_files))])
-        if len(possible_files) < 1:
-            asdf = True
-        # durations = {files_dict[mp3_filename]["duration"]: mp3_filename for fuzz, mp3_filename in mp3_filenames}
-        percentages = {mp3_filename: 5 - abs((files_dict[mp3_filename]["duration"] - duration)) for mp3_filename in possible_files if
-                       files_dict[mp3_filename]["duration"]}
-        # sorted_percent = sorted([[a, b] for b, a in percentages.items()])
-        decisions = {filename: percentages[filename] * possible_files[filename] for filename in possible_files}
-        for filename in decisions:
-            decision_matrix[md_index] = decisions
-        # print(title, decision_matrix)
-        # for fuzz, mp3_filename in mp3_filenames:
-        #    files_dict[mp3_filename]["metadata"].append(metadata)
-        now = time.time()
-        if now - last_time > 1:
-            percent = (float(md_index) / len(music_metadata)) * 100.0
-            bar = f"[{'#' * int(percent / 2.0)}{'-' * int((100 - percent) / 2.0)}]"
-            guess = time.gmtime(((len(music_metadata) - last_index) / (md_index - last_index)) / (now - last_time))
-            guess_time = time.strftime('%M:%S', guess)
-            run_time = time.strftime('%M:%S', time.gmtime(now - start_time))
-            print(f"{bar} {md_index}/{len(music_metadata)} [{percent:0.1f}%] {md_index - last_index}/s {run_time}/{guess_time} ")
-            last_time = time.time()
-            last_index = md_index
+        presorted = set()
+        for word in search_title.split(" "):
+            if len(word) > 3:
+                for s in mp3_files:
+                    if word in s.lower():
+                        presorted.add(s)
+        if len(presorted) == 1:
+            filename = presorted.pop()
+            decision_matrix[md_index] = {filename: 5.0}
+            datastore["matrix"][md_index] = {filename: 5.0}
+        else:
+            possible_files = {s: fuzzy(s[:-4].lower(), search_title[:30].lower(), ratio_calc=True) for s in presorted}
+            # sorted_files = sorted([[a, b] for b, a in possible_files.items()])
+            # print(title, possible_files[:min(3, len(possible_files))])
+            if len(possible_files) < 1:
+                asdf = True
+            # durations = {files_dict[mp3_filename]["duration"]: mp3_filename for fuzz, mp3_filename in mp3_filenames}
+            percentages = {mp3_filename: 5 - abs((files_dict[mp3_filename]["duration"] - duration)) for mp3_filename in possible_files if
+                           files_dict[mp3_filename]["duration"]}
+            # sorted_percent = sorted([[a, b] for b, a in percentages.items()])
+            decisions = {filename: percentages[filename] * possible_files[filename] for filename in possible_files if filename in percentages}
+            for filename in decisions:
+                decision_matrix[md_index] = decisions
+                datastore["matrix"][md_index] = decisions
+            # print(title, decision_matrix)
+            # for fuzz, mp3_filename in mp3_filenames:
+            #    files_dict[mp3_filename]["metadata"].append(metadata)
+            now = time.time()
+            if now - last_time > 1:
+                percent = (float(md_index) / len(music_metadata)) * 100.0
+                bar = f"[{'#' * int(percent / 2.0)}{'-' * int((100 - percent) / 2.0)}]"
+                try:
+                    guess = time.gmtime(((len(music_metadata) - last_index) / (md_index - last_index)) / (now - last_time))
+                except ZeroDivisionError:
+                    guess = time.gmtime(0)
+                guess_time = time.strftime('%M:%S', guess)
+                run_time = time.strftime('%M:%S', time.gmtime(now - start_time))
+                print(f"{bar} {md_index}/{len(music_metadata)} [{percent:0.1f}%] {md_index - last_index}/s {run_time}/{guess_time} ")
+                last_time = time.time()
+                last_index = md_index
+                datastore.sync()
+    datastore["matrix_complete"] = True
+else:
+    for md_index in datastore["matrix"]:
+        for filename in datastore["matrix"][md_index]:
+            if md_index not in decision_matrix:
+                decision_matrix[md_index] = {}
+            decision_matrix[md_index][filename] = float(datastore["matrix"][md_index][filename])
+
+#cells = []
+for md_index in decision_matrix:
+    for filename in decision_matrix[md_index]:
+        if filename not in decision_matrix_inv:
+            decision_matrix_inv[filename] = {}
+        decision_matrix_inv[filename][md_index] = decision_matrix[md_index][filename]
+        #cells.append([decision_matrix[md_index][filename], md_index, filename])
+
+print('SOLVING MATCH MATRIX')
+while 1:
+    changed = False
+    for md_index in decision_matrix:
+        for filename in decision_matrix[md_index]:
+            if md_index in decision_matrix and filename in decision_matrix[md_index]:
+                rating = decision_matrix[md_index][filename]
+                if rating == 5.0:
+                    decision_matrix[md_index] = {filename: 5.0}
+                    decision_matrix_inv[filename] = {md_index: 5.0}
+                    continue
+                md_ratings = []
+                file_ratings = []
+                for t_filename in decision_matrix[md_index]:
+                    file_ratings.append([decision_matrix[md_index][t_filename], t_filename])
+                for t_md_index in decision_matrix_inv[filename]:
+                    md_ratings.append([decision_matrix_inv[filename][t_md_index], t_md_index])
+                md_ratings.sort(reverse=True)
+                file_ratings.sort(reverse=True)
+                if md_ratings[0][1] == md_index and file_ratings[0][1] == filename:  # MATCH
+                    decision_matrix[md_index] = {filename: 5.0}
+                    decision_matrix_inv[filename] = {md_index: 5.0}
+                elif md_ratings[-1][1] == md_index and file_ratings[-1][1] == filename:  # MATCH
+                    #decision_matrix[md_index] = {filename: 5.0}
+                    #decision_matrix_inv[filename] = {md_index: 5.0}
+                    pass
+                    asdf = 1
+    if not changed:
+        break
+for md_index in decision_matrix:
+    if len(decision_matrix[md_index]) > 1:
+        print(decision_matrix[md_index])
+
+
 
 # Process the files that the program was able to match
 start_time = time.time()
