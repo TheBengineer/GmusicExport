@@ -72,9 +72,13 @@ if "metadata" not in datastore:
             files_dict[mp3_filename]["duration"] = 0
             pass  # Skip non MP3 Files
         datastore["metadata"][mp3_filename] = [files_dict[mp3_filename]["duration"], files_dict[mp3_filename]["tags"]]
+    datastore["metadata"] = datastore["metadata"]
+    datastore.sync()
 else:
     for filename in datastore['metadata']:
         duration, tags = datastore['metadata'][filename]
+        if filename not in files_dict:
+            files_dict[filename] = {"duration": 0.0, "tags": {}}
         files_dict[filename]["duration"] = duration
 
 print("CREATING METADATA <-> FILE MATCH MATRIX")
@@ -103,6 +107,10 @@ if "matrix_complete" not in datastore:
             datastore["matrix"][md_index] = {filename: 5.0}
         else:
             possible_files = {s: fuzzy(s[:-4].lower(), search_title[:30].lower(), ratio_calc=True) for s in presorted}
+            title_score = {s: fuzzy(files_dict[s]["tags"]["title"].lower(), title.lower(), ratio_calc=True) for s in presorted if files_dict[s]["tags"]["title"]}
+            album_score = {s: fuzzy(files_dict[s]["tags"]["album"].lower(), album.lower(), ratio_calc=True) for s in presorted if files_dict[s]["tags"]["album"]}
+            artist_score = {s: fuzzy(files_dict[s]["tags"]["artist"].lower(), artist.lower(), ratio_calc=True) for s in presorted if files_dict[s]["tags"]["artist"]}
+
             # sorted_files = sorted([[a, b] for b, a in possible_files.items()])
             # print(title, possible_files[:min(3, len(possible_files))])
             if len(possible_files) < 1:
@@ -111,7 +119,17 @@ if "matrix_complete" not in datastore:
             percentages = {mp3_filename: 5 - abs((files_dict[mp3_filename]["duration"] - duration)) for mp3_filename in possible_files if
                            files_dict[mp3_filename]["duration"]}
             # sorted_percent = sorted([[a, b] for b, a in percentages.items()])
-            decisions = {filename: percentages[filename] * possible_files[filename] for filename in possible_files if filename in percentages}
+            decisions = {}
+            for filename in possible_files:
+                decisions[filename] = percentages[filename]
+                decisions[filename] *= possible_files[filename]
+                if filename in title_score[filename]:
+                    decisions[filename] *= title_score[filename]
+                if filename in album_score[filename]:
+                    decisions[filename] *= album_score[filename]
+                if filename in artist_score[filename]:
+                    decisions[filename] *= artist_score[filename]
+
             for filename in decisions:
                 decision_matrix[md_index] = decisions
                 datastore["matrix"][md_index] = decisions
@@ -170,76 +188,65 @@ while 1:
                 if md_ratings[0][1] == md_index and file_ratings[0][1] == filename:  # MATCH
                     decision_matrix[md_index] = {filename: 5.0}
                     decision_matrix_inv[filename] = {md_index: 5.0}
-                elif md_ratings[-1][1] == md_index and file_ratings[-1][1] == filename:  # MATCH
-                    #decision_matrix[md_index] = {filename: 5.0}
-                    #decision_matrix_inv[filename] = {md_index: 5.0}
-                    pass
-                    asdf = 1
+                # elif md_ratings[-1][1] == md_index and file_ratings[-1][1] == filename:  # MATCH
+                #     #decision_matrix[md_index] = {filename: 5.0}
+                #     #decision_matrix_inv[filename] = {md_index: 5.0}
+                #     pass
     if not changed:
         break
 for md_index in decision_matrix:
-    if len(decision_matrix[md_index]) > 1:
-        print(decision_matrix[md_index])
+    if len(decision_matrix[md_index]) == 1:
+        filename = list(decision_matrix[md_index].keys())[0]
+        if len(decision_matrix_inv[filename]) != 1:
+            print(music_metadata[md_index][0], decision_matrix[md_index])
 
 
 
 # Process the files that the program was able to match
 start_time = time.time()
 processed_files = 0
-for filename in files_dict:
-    title, album, artist, duration = files_dict[filename]["metadata"]
-    tags = files_dict[filename]["tags"]
-    changed = False
+for filename in decision_matrix_inv:
+    if len(list(decision_matrix_inv[filename].keys())) == 1:
+        md_index = list(decision_matrix_inv[filename].keys())[0]
+        title, album, artist, duration = music_metadata[md_index]
+        tags = files_dict[filename]["tags"]
+        changed = False
 
-    # Print Status every second
-    now = time.time()
-    if now - last_time > 1:
-        percent = (float(processed_files) / len(music_metadata)) * 100.0
-        bar = f"[{'#' * int(percent / 2.0)}{'-' * int((100 - percent) / 2.0)}]"
-        guess = time.gmtime(((len(music_metadata) - last_index) / (md_index - last_index)) / (now - last_time))
-        guess_time = time.strftime('%M:%S', guess)
-        run_time = time.strftime('%M:%S', time.gmtime(now - start_time))
-        print(f"{bar} {md_index}/{len(music_metadata)} [{percent:0.1f}%] {md_index - last_index}/s {run_time}/{guess_time} ")
-        last_time = time.time()
-        last_index = md_index
+        # Print Status every second
+        now = time.time()
+        if now - last_time > 1:
+            percent = (float(processed_files) / len(music_metadata)) * 100.0
+            bar = f"[{'#' * int(percent / 2.0)}{'-' * int((100 - percent) / 2.0)}]"
+            guess = time.gmtime(((len(music_metadata) - last_index) / (md_index - last_index)) / (now - last_time))
+            guess_time = time.strftime('%M:%S', guess)
+            run_time = time.strftime('%M:%S', time.gmtime(now - start_time))
+            print(f"{bar} {md_index}/{len(music_metadata)} [{percent:0.1f}%] {md_index - last_index}/s {run_time}/{guess_time} ")
+            last_time = time.time()
+            last_index = md_index
 
-    # Update Mp3 with Google's tags
-    if "title" in tags and tags["title"] != title:
-        tags["title"] = title
-        changed = True
-    if "album" in tags and tags["album"] != album:
-        tags["album"] = album
-        changed = True
-    if "artist" in tags and tags["artist"] != artist:
-        tags["artist"] = album
-        changed = True
+        # Update Mp3 with Google's tags
+        if "title" in tags and tags["title"] != title:
+            tags["title"] = title
+            changed = True
+        if "album" in tags and tags["album"] != album:
+            tags["album"] = album
+            changed = True
+        if "artist" in tags and tags["artist"] != artist:
+            tags["artist"] = album
+            changed = True
 
-    if changed:
-        mp3_data = MP3(os.path.join(music_path, filename))
-        for key in tags:
-            mp3_data[key] = tags[title]
-        # mp3_data.save()
-    else:
-        # print("--------------")
-        # print(tags)
-        pass
+        if changed:
+            mp3_data = MP3(os.path.join(music_path, filename))
+            for key in tags:
+                mp3_data[key] = tags[title]
+            mp3_data.save()
 
-        # If there is a single file:
-        if len(possible_files) == 1:
-            if artist and album:
-                artist_path = os.path.join(music_path, artist)
-                album_path = os.path.join(music_path, artist, album)
+        if artist and album:
+            artist_path = os.path.join(music_path, cleanup(artist))
+            album_path = os.path.join(music_path, cleanup(artist), cleanup(album))
 
-                if not os.path.exists(artist_path):
-                    os.mkdir(artist_path)
-                if not os.path.exists(album_path):
-                    os.mkdir(album_path)
-                os.rename(os.path.join(music_path, mp3_file), os.path.join(album_path, mp3_file))
-        else:
-            ambiguous_files.append(mp3_file)
-            dup_folder = os.path.join(music_path, "Duplicates")
-            if not os.path.exists(dup_folder):
-                os.mkdir(dup_folder)
-            if os.path.exists(os.path.join(music_path, mp3_file)):
-                os.rename(os.path.join(music_path, mp3_file), os.path.join(dup_folder, mp3_file))
-            # Do something with the duplicate files.
+            if not os.path.exists(artist_path):
+                os.mkdir(artist_path)
+            if not os.path.exists(album_path):
+                os.mkdir(album_path)
+            os.rename(os.path.join(music_path, filename), os.path.join(album_path, filename))
