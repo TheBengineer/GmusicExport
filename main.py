@@ -107,9 +107,9 @@ if "matrix_complete" not in datastore:
             datastore["matrix"][md_index] = {filename: 5.0}
         else:
             possible_files = {s: fuzzy(s[:-4].lower(), search_title[:30].lower(), ratio_calc=True) for s in presorted}
-            title_score = {s: fuzzy(files_dict[s]["tags"]["title"].lower(), title.lower(), ratio_calc=True) for s in presorted if files_dict[s]["tags"]["title"]}
-            album_score = {s: fuzzy(files_dict[s]["tags"]["album"].lower(), album.lower(), ratio_calc=True) for s in presorted if files_dict[s]["tags"]["album"]}
-            artist_score = {s: fuzzy(files_dict[s]["tags"]["artist"].lower(), artist.lower(), ratio_calc=True) for s in presorted if files_dict[s]["tags"]["artist"]}
+            title_score = {s: fuzzy(files_dict[s]["tags"]["title"].lower(), title.lower(), ratio_calc=True) for s in presorted if "title" in files_dict[s]["tags"]}
+            album_score = {s: fuzzy(files_dict[s]["tags"]["album"].lower(), album.lower(), ratio_calc=True) for s in presorted if "album" in files_dict[s]["tags"]}
+            artist_score = {s: fuzzy(files_dict[s]["tags"]["artist"].lower(), artist.lower(), ratio_calc=True) for s in presorted if "artist" in files_dict[s]["tags"]}
 
             # sorted_files = sorted([[a, b] for b, a in possible_files.items()])
             # print(title, possible_files[:min(3, len(possible_files))])
@@ -121,13 +121,14 @@ if "matrix_complete" not in datastore:
             # sorted_percent = sorted([[a, b] for b, a in percentages.items()])
             decisions = {}
             for filename in possible_files:
-                decisions[filename] = percentages[filename]
-                decisions[filename] *= possible_files[filename]
-                if filename in title_score[filename]:
+                decisions[filename] = possible_files[filename]
+                if filename in percentages:
+                    decisions[filename] *= percentages[filename]
+                if filename in title_score:
                     decisions[filename] *= title_score[filename]
-                if filename in album_score[filename]:
+                if filename in album_score:
                     decisions[filename] *= album_score[filename]
-                if filename in artist_score[filename]:
+                if filename in artist_score:
                     decisions[filename] *= artist_score[filename]
 
             for filename in decisions:
@@ -250,3 +251,11 @@ for filename in decision_matrix_inv:
             if not os.path.exists(album_path):
                 os.mkdir(album_path)
             os.rename(os.path.join(music_path, filename), os.path.join(album_path, filename))
+
+    else:
+        dup_folder = os.path.join(music_path, "Duplicates")
+        if not os.path.exists(dup_folder):
+            os.mkdir(dup_folder)
+        if os.path.exists(os.path.join(music_path, filename)):
+            os.rename(os.path.join(music_path, filename), os.path.join(dup_folder, filename))
+        # Do something with the duplicate files.
