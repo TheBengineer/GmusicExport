@@ -36,7 +36,6 @@ decision_matrix = {}
 decision_matrix_inv = {}
 datastore = shelve.open('datastore', writeback=True)
 
-
 # Load Metadata
 with open(os.path.join(music_path, "music-uploads-metadata.csv"), "r", encoding='utf-8') as music_metadata_file:
     music_metadata_reader = csv.reader(music_metadata_file)
