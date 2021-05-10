@@ -28,16 +28,17 @@ def cleanup(dirty_text):
 start_time = time.time()
 last_time = start_time
 last_index = 0
-mp3_files = [f for f in os.listdir(music_path) if os.path.isfile(os.path.join(music_path, f))]
-
-# Fix mp3 files Google stripped .mp3 off.
-for filename in mp3_files:
-    if len(filename) >4 or filename[-4:] == ".mp3":
-        pass
-
 decision_matrix = {}
 decision_matrix_inv = {}
 datastore = shelve.open('datastore', writeback=True)
+
+# Fix mp3 files Google stripped .mp3 off. Get all files
+mp3_files = [f for f in os.listdir(music_path) if os.path.isfile(os.path.join(music_path, f))]
+for filename in mp3_files:
+    if len(filename) < 4 or (filename[-4:].lower() != ".mp3" and filename[-4:] != ".csv"):
+        os.rename(os.path.join(music_path, filename), os.path.join(music_path, f'{filename}.mp3'))
+mp3_files = [f for f in os.listdir(music_path) if os.path.isfile(os.path.join(music_path, f))]
+
 
 # Load Metadata
 with open(os.path.join(music_path, "music-uploads-metadata.csv"), "r", encoding='utf-8') as music_metadata_file:
@@ -89,6 +90,7 @@ if "matrix_complete" not in datastore:
     if "matrix" not in datastore:
         datastore["matrix"] = {}
     start_time = time.time()
+    last_index = 0
     for md_index in music_metadata:
         title, album, artist, duration = music_metadata[md_index]
         if 'Bananas' in title:
