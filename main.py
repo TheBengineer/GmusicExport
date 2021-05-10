@@ -13,7 +13,7 @@ from config import music_path
 
 def cleanup(dirty_text):
     if isinstance(dirty_text, str):
-        clean = dirty_text
+        clean = dirty_text.strip()
         fix = [[":", "_"],
                ["'", "_"],
                ['"', "_"],
