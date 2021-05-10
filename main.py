@@ -1,6 +1,7 @@
 import csv
 import os
 import time
+from multiprocessing import Pool, cpu_count
 
 import mutagen
 from mutagen.mp3 import EasyMP3 as MP3
@@ -9,7 +10,6 @@ from helpers import levenshtein_ratio_and_distance as fuzzy
 from unsort import unsort
 
 from config import music_path
-
 
 def cleanup(dirty_text):
     if isinstance(dirty_text, str):
@@ -44,6 +44,8 @@ def status(l_time, current_index, l_index, total, process_start_time):
     return l_time, l_index
 
 
+core_count = max(cpu_count() - 2, 1)
+pool = Pool(core_count)
 start_time = time.time()
 last_time = start_time - .1
 last_index = 0
@@ -124,9 +126,11 @@ for filename in files_dict:
             search_grid_inv[md_index] = set()
         search_grid_inv[md_index].add(filename)
 
+
 print("POPULATING METADATA <-> FILE MATCH MATRIX")
 start_time = time.time()
 last_index = 0
+
 for md_number, md_index in enumerate(search_grid_inv):
     if len(search_grid_inv[md_index]) == 1:
         filename = search_grid_inv[md_index].pop()
@@ -138,12 +142,11 @@ for md_number, md_index in enumerate(search_grid_inv):
             duration = float(duration)
         except ValueError:
             duration = 0
-        search_title = cleanup(title).lower()
 
         title_score = {s: fuzzy(files_dict[s]["tags"]["title"].lower(), title.lower(), ratio_calc=True) for s in presorted if "title" in files_dict[s]["tags"]}
         album_score = {s: fuzzy(files_dict[s]["tags"]["album"].lower(), album.lower(), ratio_calc=True) for s in presorted if "album" in files_dict[s]["tags"]}
         artist_score = {s: fuzzy(files_dict[s]["tags"]["artist"].lower(), artist.lower(), ratio_calc=True) for s in presorted if "artist" in files_dict[s]["tags"]}
-        percentages = {mp3_filename: 5 - abs((files_dict[mp3_filename]["duration"] - duration)) for mp3_filename in presorted if files_dict[mp3_filename]["duration"]}
+        percentages = {s: 5 - abs((files_dict[s]["duration"] - duration)) for s in presorted if files_dict[s]["duration"]}
 
         decisions = {}
         for filename in presorted:

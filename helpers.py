@@ -47,3 +47,15 @@ def levenshtein_ratio_and_distance(s, t, ratio_calc=False):
         # insertions and/or substitutions
         # This is the minimum number of edits needed to convert string a to string b
         return "The strings are {} edits away".format(distance[row][col])
+
+
+def fuzzy2(a, b):
+    return levenshtein_ratio_and_distance(a.lower(), b.lower(), ratio_calc=True)
+
+
+def solve(a, files_dict):
+    return files_dict[a]["duration"]
+
+
+def duration(file_duration, md_duration):
+    return 5 - abs(file_duration - md_duration)
