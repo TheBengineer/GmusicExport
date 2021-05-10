@@ -49,8 +49,9 @@ def levenshtein_ratio_and_distance(s, t, ratio_calc=False):
         return "The strings are {} edits away".format(distance[row][col])
 
 
-def fuzzy2(a, b):
-    return levenshtein_ratio_and_distance(a.lower(), b.lower(), ratio_calc=True)
+def fuzzy2(data):
+    fn, a, b = data
+    return [fn, levenshtein_ratio_and_distance(a.lower(), b.lower(), ratio_calc=True)]
 
 
 def solve(a, files_dict):
