@@ -7,6 +7,7 @@ import mutagen
 from mutagen.mp3 import EasyMP3 as MP3
 
 from helpers import levenshtein_ratio_and_distance as fuzzy
+from unsort import unsort
 
 from config import music_path
 
@@ -32,6 +33,7 @@ decision_matrix = {}
 decision_matrix_inv = {}
 datastore = shelve.open('datastore', writeback=True)
 
+print(f"MOVED {unsort()} FILES BACK TO MAIN FOLDER (IN CASE OF PREVIOUS RUNS)")
 # Fix mp3 files Google stripped .mp3 off. Get all files
 mp3_files = [f for f in os.listdir(music_path) if os.path.isfile(os.path.join(music_path, f))]
 for filename in mp3_files:
@@ -93,8 +95,6 @@ if "matrix_complete" not in datastore:
     last_index = 0
     for md_index in music_metadata:
         title, album, artist, duration = music_metadata[md_index]
-        if 'Bananas' in title:
-            asdf = 1
         try:
             duration = float(duration)
         except ValueError:
@@ -107,6 +107,9 @@ if "matrix_complete" not in datastore:
                 for s in mp3_files:
                     if word in s.lower():
                         presorted.add(s)
+        for s in mp3_files:
+            if search_title.lower() in s.lower():
+                presorted.add(s)
         if len(presorted) == 1:
             filename = presorted.pop()
             decision_matrix[md_index] = {filename: 5.0}
@@ -165,18 +168,14 @@ else:
                 decision_matrix[md_index] = {}
             decision_matrix[md_index][filename] = float(datastore["matrix"][md_index][filename])
 
-#cells = []
+# Create inverse matrix
 for md_index in decision_matrix:
     for filename in decision_matrix[md_index]:
         if filename not in decision_matrix_inv:
             decision_matrix_inv[filename] = {}
-        if "Bananas" in filename:
-            asdf = 1
         decision_matrix_inv[filename][md_index] = decision_matrix[md_index][filename]
-        #cells.append([decision_matrix[md_index][filename], md_index, filename])
 
 
-start_time = time.time()
 sorted_songs = 0
 print('SOLVING MATCH MATRIX')
 while 1:
@@ -188,6 +187,7 @@ while 1:
                 if rating == 5.0:
                     decision_matrix[md_index] = {filename: 5.0}
                     decision_matrix_inv[filename] = {md_index: 5.0}
+                    sorted_songs += 1
                     continue
                 md_ratings = []
                 file_ratings = []
@@ -205,14 +205,15 @@ while 1:
                 #     #decision_matrix[md_index] = {filename: 5.0}
                 #     #decision_matrix_inv[filename] = {md_index: 5.0}
                 #     pass
+        now = time.time()
+        if now - last_time > .5:
+            percent = (float(sorted_songs) / len(mp3_files)) * 100.0
+            bar = f"[{'#' * int(percent / 2.0)}{'-' * int((100 - percent) / 2.0)}]"
+            run_time = time.strftime('%M:%S', time.gmtime(now - start_time))
+            print(f"{bar} {sorted_songs}/{len(mp3_files)} [{percent:0.1f}%] {run_time} ")
+            last_time = time.time()
     if not changed:
         break
-    now = time.time()
-    if now - last_time > 1:
-        percent = (float(sorted_songs) / len(mp3_files)) * 100.0
-        bar = f"[{'#' * int(percent / 2.0)}{'-' * int((100 - percent) / 2.0)}]"
-        run_time = time.strftime('%M:%S', time.gmtime(now - start_time))
-        print(f"{bar} {sorted_songs}/{len(mp3_files)} [{percent:0.1f}%] {run_time} ")
 
 for md_index in decision_matrix:
     if len(decision_matrix[md_index]) == 1:
@@ -277,7 +278,8 @@ for filename in mp3_files:
             if not os.path.exists(dup_folder):
                 os.mkdir(dup_folder)
             if os.path.exists(os.path.join(music_path, filename)):
-                os.rename(os.path.join(music_path, filename), os.path.join(dup_folder, filename))
+                pass
+                # os.rename(os.path.join(music_path, filename), os.path.join(dup_folder, filename))
             # Do something with the duplicate files.
     else:
-        print(f"File Not analized: {filename}")
+        print(f"File Not analyzed: {filename}")
