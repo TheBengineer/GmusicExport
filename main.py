@@ -226,9 +226,12 @@ print('MOVING FILES TO FOLDERS')
 # Process the files that the program was able to match
 start_time = time.time()
 processed_files = 0
-for filename in mp3_files:
+last_index = 0
+for file_number, filename in enumerate(mp3_files):
     if filename in decision_matrix_inv:
-        if len(list(decision_matrix_inv[filename].keys())) == 1 and 0:
+        artist = None
+        album = None
+        if len(list(decision_matrix_inv[filename].keys())) == 1:
             md_index = list(decision_matrix_inv[filename].keys())[0]
             title, album, artist, duration = music_metadata[md_index]
             tags = files_dict[filename]["tags"]
@@ -237,14 +240,14 @@ for filename in mp3_files:
             # Print Status every second
             now = time.time()
             if now - last_time > 1:
-                percent = (float(processed_files) / len(music_metadata)) * 100.0
+                percent = (float(file_number) / len(mp3_files)) * 100.0
                 bar = f"[{'#' * int(percent / 2.0)}{'-' * int((100 - percent) / 2.0)}]"
-                guess = time.gmtime(((len(music_metadata) - last_index) / (md_index - last_index)) / (now - last_time))
+                guess = time.gmtime(((len(mp3_files) - last_index) / (file_number - last_index)) / (now - last_time))
                 guess_time = time.strftime('%M:%S', guess)
                 run_time = time.strftime('%M:%S', time.gmtime(now - start_time))
-                print(f"{bar} {md_index}/{len(music_metadata)} [{percent:0.1f}%] {md_index - last_index}/s {run_time}/{guess_time} ")
+                print(f"{bar} {file_number}/{len(mp3_files)} [{percent:0.1f}%] {file_number - last_index}/s {run_time}/{guess_time} ")
                 last_time = time.time()
-                last_index = md_index
+                last_index = file_number
 
             # Update Mp3 with Google's tags
             if "title" not in tags or tags["title"] != title:
@@ -260,26 +263,37 @@ for filename in mp3_files:
             if changed:
                 mp3_data = MP3(os.path.join(music_path, filename))
                 for key in tags:
-                    mp3_data[key] = tags[title]
+                    if key == "title":
+                        mp3_data["title"] = tags[key]
+                    elif key == "album":
+                        mp3_data["album"] = tags[key]
+                    elif key == "artist":
+                        mp3_data["artist"] = tags[key]
                 mp3_data.save()
 
-            if artist and album:
-                artist_path = os.path.join(music_path, cleanup(artist))
-                album_path = os.path.join(music_path, cleanup(artist), cleanup(album))
+        elif len(list(decision_matrix_inv[filename].keys())) > 1:
+            if "album" in files_dict[filename]["tags"]:
+                album = files_dict[filename]["tags"]["album"]
+            if "artist" in files_dict[filename]["tags"]:
+                artist = files_dict[filename]["tags"]["artist"]
 
-                if not os.path.exists(artist_path):
-                    os.mkdir(artist_path)
-                if not os.path.exists(album_path):
-                    os.mkdir(album_path)
-                os.rename(os.path.join(music_path, filename), os.path.join(album_path, filename))
+        if artist and album:
+            artist_path = os.path.join(music_path, cleanup(artist))
+            album_path = os.path.join(music_path, cleanup(artist), cleanup(album))
+
+            if not os.path.exists(artist_path):
+                os.mkdir(artist_path)
+            if not os.path.exists(album_path):
+                os.mkdir(album_path)
+            os.rename(os.path.join(music_path, filename), os.path.join(album_path, filename))
 
         else:
             dup_folder = os.path.join(music_path, "Duplicates")
             if not os.path.exists(dup_folder):
                 os.mkdir(dup_folder)
             if os.path.exists(os.path.join(music_path, filename)):
-                pass
-                # os.rename(os.path.join(music_path, filename), os.path.join(dup_folder, filename))
+                os.rename(os.path.join(music_path, filename), os.path.join(dup_folder, filename))
             # Do something with the duplicate files.
-    else:
-        print(f"File Not analyzed: {filename}")
+
+
+print("DONE")
