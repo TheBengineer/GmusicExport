@@ -29,9 +29,12 @@ start_time = time.time()
 last_time = start_time
 last_index = 0
 mp3_files = [f for f in os.listdir(music_path) if os.path.isfile(os.path.join(music_path, f))]
-keysv1 = ['artist', 'album', 'song', 'track', 'genre', 'year', 'comment']
-keysv2 = ['artist', 'album', 'song', 'track', 'genre', 'year', 'band', 'comment', "composer", "copyright", "publisher", "url"]
-keys_map = {'artist': 'artist', 'album': 'album', 'song': 'song', 'track': 'track', 'genre': 'genre', 'year': 'year', 'comment': 'comment', }
+
+# Fix mp3 files Google stripped .mp3 off.
+for filename in mp3_files:
+    if len(filename) >4 or filename[-4:] == ".mp3":
+        pass
+
 decision_matrix = {}
 decision_matrix_inv = {}
 datastore = shelve.open('datastore', writeback=True)
@@ -88,6 +91,8 @@ if "matrix_complete" not in datastore:
     start_time = time.time()
     for md_index in music_metadata:
         title, album, artist, duration = music_metadata[md_index]
+        if 'Bananas' in title:
+            asdf = 1
         try:
             duration = float(duration)
         except ValueError:
@@ -163,9 +168,14 @@ for md_index in decision_matrix:
     for filename in decision_matrix[md_index]:
         if filename not in decision_matrix_inv:
             decision_matrix_inv[filename] = {}
+        if "Bananas" in filename:
+            asdf = 1
         decision_matrix_inv[filename][md_index] = decision_matrix[md_index][filename]
         #cells.append([decision_matrix[md_index][filename], md_index, filename])
 
+
+start_time = time.time()
+sorted_songs = 0
 print('SOLVING MATCH MATRIX')
 while 1:
     changed = False
@@ -188,12 +198,20 @@ while 1:
                 if md_ratings[0][1] == md_index and file_ratings[0][1] == filename:  # MATCH
                     decision_matrix[md_index] = {filename: 5.0}
                     decision_matrix_inv[filename] = {md_index: 5.0}
+                    sorted_songs += 1
                 # elif md_ratings[-1][1] == md_index and file_ratings[-1][1] == filename:  # MATCH
                 #     #decision_matrix[md_index] = {filename: 5.0}
                 #     #decision_matrix_inv[filename] = {md_index: 5.0}
                 #     pass
     if not changed:
         break
+    now = time.time()
+    if now - last_time > 1:
+        percent = (float(sorted_songs) / len(mp3_files)) * 100.0
+        bar = f"[{'#' * int(percent / 2.0)}{'-' * int((100 - percent) / 2.0)}]"
+        run_time = time.strftime('%M:%S', time.gmtime(now - start_time))
+        print(f"{bar} {sorted_songs}/{len(mp3_files)} [{percent:0.1f}%] {run_time} ")
+
 for md_index in decision_matrix:
     if len(decision_matrix[md_index]) == 1:
         filename = list(decision_matrix[md_index].keys())[0]
@@ -201,60 +219,63 @@ for md_index in decision_matrix:
             print(music_metadata[md_index][0], decision_matrix[md_index])
 
 
-
+print('MOVING FILES TO FOLDERS')
 # Process the files that the program was able to match
 start_time = time.time()
 processed_files = 0
-for filename in decision_matrix_inv:
-    if len(list(decision_matrix_inv[filename].keys())) == 1:
-        md_index = list(decision_matrix_inv[filename].keys())[0]
-        title, album, artist, duration = music_metadata[md_index]
-        tags = files_dict[filename]["tags"]
-        changed = False
+for filename in mp3_files:
+    if filename in decision_matrix_inv:
+        if len(list(decision_matrix_inv[filename].keys())) == 1 and 0:
+            md_index = list(decision_matrix_inv[filename].keys())[0]
+            title, album, artist, duration = music_metadata[md_index]
+            tags = files_dict[filename]["tags"]
+            changed = False
 
-        # Print Status every second
-        now = time.time()
-        if now - last_time > 1:
-            percent = (float(processed_files) / len(music_metadata)) * 100.0
-            bar = f"[{'#' * int(percent / 2.0)}{'-' * int((100 - percent) / 2.0)}]"
-            guess = time.gmtime(((len(music_metadata) - last_index) / (md_index - last_index)) / (now - last_time))
-            guess_time = time.strftime('%M:%S', guess)
-            run_time = time.strftime('%M:%S', time.gmtime(now - start_time))
-            print(f"{bar} {md_index}/{len(music_metadata)} [{percent:0.1f}%] {md_index - last_index}/s {run_time}/{guess_time} ")
-            last_time = time.time()
-            last_index = md_index
+            # Print Status every second
+            now = time.time()
+            if now - last_time > 1:
+                percent = (float(processed_files) / len(music_metadata)) * 100.0
+                bar = f"[{'#' * int(percent / 2.0)}{'-' * int((100 - percent) / 2.0)}]"
+                guess = time.gmtime(((len(music_metadata) - last_index) / (md_index - last_index)) / (now - last_time))
+                guess_time = time.strftime('%M:%S', guess)
+                run_time = time.strftime('%M:%S', time.gmtime(now - start_time))
+                print(f"{bar} {md_index}/{len(music_metadata)} [{percent:0.1f}%] {md_index - last_index}/s {run_time}/{guess_time} ")
+                last_time = time.time()
+                last_index = md_index
 
-        # Update Mp3 with Google's tags
-        if "title" not in tags or tags["title"] != title:
-            tags["title"] = title
-            changed = True
-        if "album" not in tags or tags["album"] != album:
-            tags["album"] = album
-            changed = True
-        if "artist" not in tags or tags["artist"] != artist:
-            tags["artist"] = album
-            changed = True
+            # Update Mp3 with Google's tags
+            if "title" not in tags or tags["title"] != title:
+                tags["title"] = title
+                changed = True
+            if "album" not in tags or tags["album"] != album:
+                tags["album"] = album
+                changed = True
+            if "artist" not in tags or tags["artist"] != artist:
+                tags["artist"] = album
+                changed = True
 
-        if changed:
-            mp3_data = MP3(os.path.join(music_path, filename))
-            for key in tags:
-                mp3_data[key] = tags[title]
-            mp3_data.save()
+            if changed:
+                mp3_data = MP3(os.path.join(music_path, filename))
+                for key in tags:
+                    mp3_data[key] = tags[title]
+                mp3_data.save()
 
-        if artist and album:
-            artist_path = os.path.join(music_path, cleanup(artist))
-            album_path = os.path.join(music_path, cleanup(artist), cleanup(album))
+            if artist and album:
+                artist_path = os.path.join(music_path, cleanup(artist))
+                album_path = os.path.join(music_path, cleanup(artist), cleanup(album))
 
-            if not os.path.exists(artist_path):
-                os.mkdir(artist_path)
-            if not os.path.exists(album_path):
-                os.mkdir(album_path)
-            os.rename(os.path.join(music_path, filename), os.path.join(album_path, filename))
+                if not os.path.exists(artist_path):
+                    os.mkdir(artist_path)
+                if not os.path.exists(album_path):
+                    os.mkdir(album_path)
+                os.rename(os.path.join(music_path, filename), os.path.join(album_path, filename))
 
+        else:
+            dup_folder = os.path.join(music_path, "Duplicates")
+            if not os.path.exists(dup_folder):
+                os.mkdir(dup_folder)
+            if os.path.exists(os.path.join(music_path, filename)):
+                os.rename(os.path.join(music_path, filename), os.path.join(dup_folder, filename))
+            # Do something with the duplicate files.
     else:
-        dup_folder = os.path.join(music_path, "Duplicates")
-        if not os.path.exists(dup_folder):
-            os.mkdir(dup_folder)
-        if os.path.exists(os.path.join(music_path, filename)):
-            os.rename(os.path.join(music_path, filename), os.path.join(dup_folder, filename))
-        # Do something with the duplicate files.
+        print(f"File Not analized: {filename}")
