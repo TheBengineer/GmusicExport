@@ -1,7 +1,6 @@
 import csv
 import os
 import time
-import shelve
 
 import mutagen
 from mutagen.mp3 import EasyMP3 as MP3
@@ -27,11 +26,10 @@ def cleanup(dirty_text):
 
 
 start_time = time.time()
-last_time = start_time
+last_time = start_time - .1
 last_index = 0
 decision_matrix = {}
 decision_matrix_inv = {}
-datastore = shelve.open('datastore', writeback=True)
 
 print(f"MOVED {unsort()} FILES BACK TO MAIN FOLDER (IN CASE OF PREVIOUS RUNS)")
 # Fix mp3 files Google stripped .mp3 off. Get all files
@@ -53,120 +51,100 @@ files_dict = {filename: {"metadata": [], "tags": {}, "duration": 0.0} for filena
 
 # Load durations from all files.
 print("LOADING FILE DURATIONS")
-if "metadata" not in datastore:
-    datastore["metadata"] = {}
-    for md_index, mp3_filename in enumerate(mp3_files):
-        now = time.time()
-        if now - last_time > .5:
-            percent = (float(md_index) / len(mp3_files)) * 100.0
-            bar = f"[{'#' * int(percent / 2.0)}{'-' * int((100 - percent) / 2.0)}]"
-            guess = time.gmtime(((len(mp3_files) - last_index) / (md_index - last_index)) / (now - last_time))
-            guess_time = time.strftime('%M:%S', guess)
-            run_time = time.strftime('%M:%S', time.gmtime(now - start_time))
-            print(f"{bar} {md_index}/{len(mp3_files)} [{percent:0.1f}%] {md_index - last_index}/s {run_time}/{guess_time} ")
-            last_time = time.time()
-            last_index = md_index
-            datastore.sync()
-        try:
-            mp3_data = MP3(os.path.join(music_path, mp3_filename))
-            files_dict[mp3_filename]["duration"] = mp3_data.info.length
-            tag_data = mp3_data.ID3.items(mp3_data)
-            for field, data in tag_data:
-                files_dict[mp3_filename]["tags"][field] = data[-1]
-        except mutagen.mp3.HeaderNotFoundError:
-            files_dict[mp3_filename]["duration"] = 0
-            pass  # Skip non MP3 Files
-        datastore["metadata"][mp3_filename] = [files_dict[mp3_filename]["duration"], files_dict[mp3_filename]["tags"]]
-    datastore["metadata"] = datastore["metadata"]
-    datastore.sync()
-else:
-    for filename in datastore['metadata']:
-        duration, tags = datastore['metadata'][filename]
-        if filename not in files_dict:
-            files_dict[filename] = {"duration": 0.0, "tags": {}}
-        files_dict[filename]["duration"] = duration
+for md_index, mp3_filename in enumerate(mp3_files):
+    now = time.time()
+    if now - last_time > .5:
+        percent = (float(md_index) / len(mp3_files)) * 100.0
+        bar = f"[{'#' * int(percent / 2.0)}{'-' * int((100 - percent) / 2.0)}]"
+        guess = time.gmtime(((len(mp3_files) - last_index) / (md_index - last_index)) / (now - last_time))
+        guess_time = time.strftime('%M:%S', guess)
+        run_time = time.strftime('%M:%S', time.gmtime(now - start_time))
+        print(f"{bar} {md_index}/{len(mp3_files)} [{percent:0.1f}%] {md_index - last_index}/s {run_time}/{guess_time} ")
+        last_time = time.time()
+        last_index = md_index
+    try:
+        mp3_data = MP3(os.path.join(music_path, mp3_filename))
+        files_dict[mp3_filename]["duration"] = mp3_data.info.length
+        tag_data = mp3_data.ID3.items(mp3_data)
+        for field, data in tag_data:
+            files_dict[mp3_filename]["tags"][field] = data[-1]
+    except mutagen.mp3.HeaderNotFoundError:
+        files_dict[mp3_filename]["duration"] = 0
+        pass  # Skip non MP3 Files
+
+print("SORTING FILE NAMES")
+search_grid = {}
+for md_index in music_metadata:
+    title, album, artist, duration = music_metadata[md_index]
+    try:
+        duration = float(duration)
+    except ValueError:
+        duration = 0
+    search_title = cleanup(title).lower()
+
+    presorted = set()
+    if search_title not in search_grid:
+        search_grid[search_title] = [md_index]
+    else:
+        search_grid[search_title].append([md_index])
+    for word in search_title.split(" "):
+        if len(word) > 3:
+            if word not in search_grid:
+                search_grid[word] = [md_index]
+            else:
+                search_grid[word].append([md_index])
 
 print("CREATING METADATA <-> FILE MATCH MATRIX")
-# Match files to metadata
-if "matrix_complete" not in datastore:
-    if "matrix" not in datastore:
-        datastore["matrix"] = {}
-    start_time = time.time()
-    last_index = 0
-    for md_index in music_metadata:
-        title, album, artist, duration = music_metadata[md_index]
-        try:
-            duration = float(duration)
-        except ValueError:
-            duration = 0
-        search_title = cleanup(title).lower()
+start_time = time.time()
+last_index = 0
+for file_number, filename in enumerate(mp3_files):
+    if len(presorted) == 1:
+        filename = presorted.pop()
+        decision_matrix[md_index] = {filename: 5.0}
+    else:
+        possible_files = {s: fuzzy(s[:-4].lower(), search_title[:30].lower(), ratio_calc=True) for s in presorted}
+        title_score = {s: fuzzy(files_dict[s]["tags"]["title"].lower(), title.lower(), ratio_calc=True) for s in presorted if "title" in files_dict[s]["tags"]}
+        album_score = {s: fuzzy(files_dict[s]["tags"]["album"].lower(), album.lower(), ratio_calc=True) for s in presorted if "album" in files_dict[s]["tags"]}
+        artist_score = {s: fuzzy(files_dict[s]["tags"]["artist"].lower(), artist.lower(), ratio_calc=True) for s in presorted if "artist" in files_dict[s]["tags"]}
 
-        presorted = set()
-        for word in search_title.split(" "):
-            if len(word) > 3:
-                for s in mp3_files:
-                    if word in s.lower():
-                        presorted.add(s)
-        for s in mp3_files:
-            if search_title.lower() in s.lower():
-                presorted.add(s)
-        if len(presorted) == 1:
-            filename = presorted.pop()
-            decision_matrix[md_index] = {filename: 5.0}
-            datastore["matrix"][md_index] = {filename: 5.0}
-        else:
-            possible_files = {s: fuzzy(s[:-4].lower(), search_title[:30].lower(), ratio_calc=True) for s in presorted}
-            title_score = {s: fuzzy(files_dict[s]["tags"]["title"].lower(), title.lower(), ratio_calc=True) for s in presorted if "title" in files_dict[s]["tags"]}
-            album_score = {s: fuzzy(files_dict[s]["tags"]["album"].lower(), album.lower(), ratio_calc=True) for s in presorted if "album" in files_dict[s]["tags"]}
-            artist_score = {s: fuzzy(files_dict[s]["tags"]["artist"].lower(), artist.lower(), ratio_calc=True) for s in presorted if "artist" in files_dict[s]["tags"]}
+        # sorted_files = sorted([[a, b] for b, a in possible_files.items()])
+        # print(title, possible_files[:min(3, len(possible_files))])
+        if len(possible_files) < 1:
+            asdf = True
+        # durations = {files_dict[mp3_filename]["duration"]: mp3_filename for fuzz, mp3_filename in mp3_filenames}
+        percentages = {mp3_filename: 5 - abs((files_dict[mp3_filename]["duration"] - duration)) for mp3_filename in possible_files if
+                       files_dict[mp3_filename]["duration"]}
+        # sorted_percent = sorted([[a, b] for b, a in percentages.items()])
+        decisions = {}
+        for filename in possible_files:
+            decisions[filename] = possible_files[filename]
+            if filename in percentages:
+                decisions[filename] *= percentages[filename]
+            if filename in title_score:
+                decisions[filename] *= title_score[filename]
+            if filename in album_score:
+                decisions[filename] *= album_score[filename]
+            if filename in artist_score:
+                decisions[filename] *= artist_score[filename]
 
-            # sorted_files = sorted([[a, b] for b, a in possible_files.items()])
-            # print(title, possible_files[:min(3, len(possible_files))])
-            if len(possible_files) < 1:
-                asdf = True
-            # durations = {files_dict[mp3_filename]["duration"]: mp3_filename for fuzz, mp3_filename in mp3_filenames}
-            percentages = {mp3_filename: 5 - abs((files_dict[mp3_filename]["duration"] - duration)) for mp3_filename in possible_files if
-                           files_dict[mp3_filename]["duration"]}
-            # sorted_percent = sorted([[a, b] for b, a in percentages.items()])
-            decisions = {}
-            for filename in possible_files:
-                decisions[filename] = possible_files[filename]
-                if filename in percentages:
-                    decisions[filename] *= percentages[filename]
-                if filename in title_score:
-                    decisions[filename] *= title_score[filename]
-                if filename in album_score:
-                    decisions[filename] *= album_score[filename]
-                if filename in artist_score:
-                    decisions[filename] *= artist_score[filename]
-
-            for filename in decisions:
-                decision_matrix[md_index] = decisions
-                datastore["matrix"][md_index] = decisions
-            # print(title, decision_matrix)
-            # for fuzz, mp3_filename in mp3_filenames:
-            #    files_dict[mp3_filename]["metadata"].append(metadata)
-            now = time.time()
-            if now - last_time > 1:
-                percent = (float(md_index) / len(music_metadata)) * 100.0
-                bar = f"[{'#' * int(percent / 2.0)}{'-' * int((100 - percent) / 2.0)}]"
-                try:
-                    guess = time.gmtime(((len(music_metadata) - last_index) / (md_index - last_index)) / (now - last_time))
-                except ZeroDivisionError:
-                    guess = time.gmtime(0)
-                guess_time = time.strftime('%M:%S', guess)
-                run_time = time.strftime('%M:%S', time.gmtime(now - start_time))
-                print(f"{bar} {md_index}/{len(music_metadata)} [{percent:0.1f}%] {md_index - last_index}/s {run_time}/{guess_time} ")
-                last_time = time.time()
-                last_index = md_index
-                datastore.sync()
-    datastore["matrix_complete"] = True
-else:
-    for md_index in datastore["matrix"]:
-        for filename in datastore["matrix"][md_index]:
-            if md_index not in decision_matrix:
-                decision_matrix[md_index] = {}
-            decision_matrix[md_index][filename] = float(datastore["matrix"][md_index][filename])
+        for filename in decisions:
+            decision_matrix[md_index] = decisions
+        # print(title, decision_matrix)
+        # for fuzz, mp3_filename in mp3_filenames:
+        #    files_dict[mp3_filename]["metadata"].append(metadata)
+        now = time.time()
+        if now - last_time > 1:
+            percent = (float(md_index) / len(music_metadata)) * 100.0
+            bar = f"[{'#' * int(percent / 2.0)}{'-' * int((100 - percent) / 2.0)}]"
+            try:
+                guess = time.gmtime(((len(music_metadata) - last_index) / (md_index - last_index)) / (now - last_time))
+            except ZeroDivisionError:
+                guess = time.gmtime(0)
+            guess_time = time.strftime('%M:%S', guess)
+            run_time = time.strftime('%M:%S', time.gmtime(now - start_time))
+            print(f"{bar} {md_index}/{len(music_metadata)} [{percent:0.1f}%] {md_index - last_index}/s {run_time}/{guess_time} ")
+            last_time = time.time()
+            last_index = md_index
 
 # Create inverse matrix
 for md_index in decision_matrix:
