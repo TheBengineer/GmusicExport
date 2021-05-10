@@ -225,13 +225,13 @@ for filename in decision_matrix_inv:
             last_index = md_index
 
         # Update Mp3 with Google's tags
-        if "title" in tags and tags["title"] != title:
+        if "title" not in tags or tags["title"] != title:
             tags["title"] = title
             changed = True
-        if "album" in tags and tags["album"] != album:
+        if "album" not in tags or tags["album"] != album:
             tags["album"] = album
             changed = True
-        if "artist" in tags and tags["artist"] != artist:
+        if "artist" not in tags or tags["artist"] != artist:
             tags["artist"] = album
             changed = True
 
