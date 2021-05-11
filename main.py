@@ -277,5 +277,5 @@ if __name__ == "__main__":  # Break out the main program
             os.rename(os.path.join(music_path, filename), os.path.join(album_path, filename))
             processed_files += 1
 
-    print(f'MOVED {last_index} FILES TO FOLDERS')
+    print(f'MOVED {processed_files} FILES TO FOLDERS')
     print("DONE")
