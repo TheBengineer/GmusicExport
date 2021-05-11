@@ -167,7 +167,7 @@ if __name__ == "__main__":  # Break out the main program
                 decisions[filename] *= ratio
             decision_matrix[md_index] = decisions
 
-        last_time, last_index = status(last_time, md_number, last_index, len(mp3_files), start_time)
+        last_time, last_index = status(last_time, md_number, last_index, len(search_grid_inv), start_time)
 
     # Create inverse matrix
     for md_index in decision_matrix:
@@ -224,9 +224,9 @@ if __name__ == "__main__":  # Break out the main program
     processed_files = 0
     last_index = 0
     for file_number, filename in enumerate(mp3_files):
+        artist = None
+        album = None
         if filename in decision_matrix_inv:
-            artist = None
-            album = None
             if len(list(decision_matrix_inv[filename].keys())) == 1:
                 md_index = list(decision_matrix_inv[filename].keys())[0]
                 title, album, artist, duration = music_metadata[md_index]
@@ -261,28 +261,20 @@ if __name__ == "__main__":  # Break out the main program
                     except mutagen.mp3.HeaderNotFoundError:
                         pass
 
-            else:
-                if "album" in files_dict[filename]["tags"]:
-                    album = files_dict[filename]["tags"]["album"]
-                if "artist" in files_dict[filename]["tags"]:
-                    artist = files_dict[filename]["tags"]["artist"]
+        if "album" in files_dict[filename]["tags"]:
+            album = files_dict[filename]["tags"]["album"]
+        if "artist" in files_dict[filename]["tags"]:
+            artist = files_dict[filename]["tags"]["artist"]
 
-            if artist and album:
-                artist_path = os.path.join(music_path, cleanup(artist))
-                album_path = os.path.join(music_path, cleanup(artist), cleanup(album))
+        if artist and album:
+            artist_path = os.path.join(music_path, cleanup(artist))
+            album_path = os.path.join(music_path, cleanup(artist), cleanup(album))
 
-                if not os.path.exists(artist_path):
-                    os.mkdir(artist_path)
-                if not os.path.exists(album_path):
-                    os.mkdir(album_path)
-                os.rename(os.path.join(music_path, filename), os.path.join(album_path, filename))
+            if not os.path.exists(artist_path):
+                os.mkdir(artist_path)
+            if not os.path.exists(album_path):
+                os.mkdir(album_path)
+            os.rename(os.path.join(music_path, filename), os.path.join(album_path, filename))
 
-            else:
-                dup_folder = os.path.join(music_path, "Duplicates")
-                if not os.path.exists(dup_folder):
-                    os.mkdir(dup_folder)
-                if os.path.exists(os.path.join(music_path, filename)):
-                    os.rename(os.path.join(music_path, filename), os.path.join(dup_folder, filename))
-                # Do something with the duplicate files.
     print(f'MOVED {last_index} FILES TO FOLDERS')
     print("DONE")
