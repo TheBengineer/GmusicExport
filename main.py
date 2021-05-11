@@ -261,7 +261,7 @@ if __name__ == "__main__":  # Break out the main program
                     except mutagen.mp3.HeaderNotFoundError:
                         pass
 
-            elif len(list(decision_matrix_inv[filename].keys())) > 1:
+            else:
                 if "album" in files_dict[filename]["tags"]:
                     album = files_dict[filename]["tags"]["album"]
                 if "artist" in files_dict[filename]["tags"]:
