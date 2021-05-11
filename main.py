@@ -231,7 +231,7 @@ if __name__ == "__main__":  # Break out the main program
                 changed = False
 
                 # Print Status every second
-                last_time, last_index = status(last_time, file_number, last_index, len(mp3_files), start_time)
+                last_time, last_index = status(last_time, processed_files, last_index, len(mp3_files), start_time)
 
                 # Update Mp3 with Google's tags
                 if "title" not in tags or tags["title"] != title:
@@ -275,6 +275,7 @@ if __name__ == "__main__":  # Break out the main program
             if not os.path.exists(album_path):
                 os.mkdir(album_path)
             os.rename(os.path.join(music_path, filename), os.path.join(album_path, filename))
+            processed_files += 1
 
     print(f'MOVED {last_index} FILES TO FOLDERS')
     print("DONE")
