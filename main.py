@@ -128,7 +128,6 @@ if __name__ == "__main__":  # Break out the main program
     print("POPULATING METADATA <-> FILE MATCH MATRIX")
     start_time = time.time()
     last_index = 0
-
     for md_number, md_index in enumerate(search_grid_inv):
         if len(search_grid_inv[md_index]) == 1:
             filename = search_grid_inv[md_index].pop()
@@ -160,7 +159,8 @@ if __name__ == "__main__":  # Break out the main program
 
             decisions = {}
             for filename in presorted:
-                decisions[filename] = 1.0
+                if filename not in decisions:
+                    decisions[filename] = 1.0
                 if filename in percentages:
                     decisions[filename] *= percentages[filename]
             for filename, ratio in fuzzed:
@@ -178,6 +178,7 @@ if __name__ == "__main__":  # Break out the main program
 
     start_time = time.time()
     sorted_songs = 0
+    last_index = 0
     print('SOLVING METADATA <-> FILE MATCH MATRIX')
     while 1:
         changed = False
@@ -202,6 +203,7 @@ if __name__ == "__main__":  # Break out the main program
                         decision_matrix[md_index] = {filename: 100.0}
                         decision_matrix_inv[filename] = {md_index: 100.0}
                         sorted_songs += 1
+                        changed = True
                     # elif md_ratings[-1][1] == md_index and file_ratings[-1][1] == filename:  # MATCH
                     #     #decision_matrix[md_index] = {filename: 5.0}
                     #     #decision_matrix_inv[filename] = {md_index: 5.0}
@@ -259,7 +261,6 @@ if __name__ == "__main__":  # Break out the main program
                     except mutagen.mp3.HeaderNotFoundError:
                         pass
 
-
             elif len(list(decision_matrix_inv[filename].keys())) > 1:
                 if "album" in files_dict[filename]["tags"]:
                     album = files_dict[filename]["tags"]["album"]
@@ -283,5 +284,5 @@ if __name__ == "__main__":  # Break out the main program
                 if os.path.exists(os.path.join(music_path, filename)):
                     os.rename(os.path.join(music_path, filename), os.path.join(dup_folder, filename))
                 # Do something with the duplicate files.
-
+    print(f'MOVED {last_index} FILES TO FOLDERS')
     print("DONE")
