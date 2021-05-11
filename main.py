@@ -109,7 +109,7 @@ if __name__ == "__main__":  # Break out the main program
     last_index = 0
     for file_number, filename in enumerate(mp3_files):
         for search_word in search_grid:
-            if search_word in filename[-4:].lower():
+            if search_word in filename[:-4].lower():
                 if len(search_grid[search_word]) == 1:
                     files_dict[filename]["metadata"].add(search_grid[search_word][0])
                 elif len(search_grid[search_word]) > 1:
