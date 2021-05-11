@@ -176,6 +176,7 @@ if __name__ == "__main__":  # Break out the main program
                 decision_matrix_inv[filename] = {}
             decision_matrix_inv[filename][md_index] = decision_matrix[md_index][filename]
 
+    start_time = time.time()
     sorted_songs = 0
     print('SOLVING METADATA <-> FILE MATCH MATRIX')
     while 1:
@@ -205,13 +206,7 @@ if __name__ == "__main__":  # Break out the main program
                     #     #decision_matrix[md_index] = {filename: 5.0}
                     #     #decision_matrix_inv[filename] = {md_index: 5.0}
                     #     pass
-            now = time.time()
-            if now - last_time > .5:
-                percent = (float(sorted_songs) / len(mp3_files)) * 100.0
-                bar = f"[{'#' * int(percent / 2.0)}{'-' * int((100 - percent) / 2.0)}]"
-                run_time = time.strftime('%M:%S', time.gmtime(now - start_time))
-                print(f"{bar} {sorted_songs}/{len(mp3_files)} [{percent:0.1f}%] {run_time} ")
-                last_time = time.time()
+            last_time, last_index = status(last_time, sorted_songs, last_index, len(mp3_files), start_time)
         if not changed:
             break
 
@@ -237,16 +232,7 @@ if __name__ == "__main__":  # Break out the main program
                 changed = False
 
                 # Print Status every second
-                now = time.time()
-                if now - last_time > 1:
-                    percent = (float(file_number) / len(mp3_files)) * 100.0
-                    bar = f"[{'#' * int(percent / 2.0)}{'-' * int((100 - percent) / 2.0)}]"
-                    guess = time.gmtime(((len(mp3_files) - last_index) / (file_number - last_index)) / (now - last_time))
-                    guess_time = time.strftime('%M:%S', guess)
-                    run_time = time.strftime('%M:%S', time.gmtime(now - start_time))
-                    print(f"{bar} {file_number}/{len(mp3_files)} [{percent:0.1f}%] {file_number - last_index}/s {run_time}/{guess_time} ")
-                    last_time = time.time()
-                    last_index = file_number
+                last_time, last_index = status(last_time, file_number, last_index, len(mp3_files), start_time)
 
                 # Update Mp3 with Google's tags
                 if "title" not in tags or tags["title"] != title:
@@ -260,15 +246,19 @@ if __name__ == "__main__":  # Break out the main program
                     changed = True
 
                 if changed:
-                    mp3_data = MP3(os.path.join(music_path, filename))
-                    for key in tags:
-                        if key == "title":
-                            mp3_data["title"] = tags[key]
-                        elif key == "album":
-                            mp3_data["album"] = tags[key]
-                        elif key == "artist":
-                            mp3_data["artist"] = tags[key]
-                    mp3_data.save()
+                    try:
+                        mp3_data = MP3(os.path.join(music_path, filename))
+                        for key in tags:
+                            if key == "title":
+                                mp3_data["title"] = tags[key]
+                            elif key == "album":
+                                mp3_data["album"] = tags[key]
+                            elif key == "artist":
+                                mp3_data["artist"] = tags[key]
+                        mp3_data.save()
+                    except mutagen.mp3.HeaderNotFoundError:
+                        pass
+
 
             elif len(list(decision_matrix_inv[filename].keys())) > 1:
                 if "album" in files_dict[filename]["tags"]:
