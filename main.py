@@ -238,14 +238,17 @@ if __name__ == "__main__":  # Break out the main program
 
                 # Update Mp3 with Google's tags
                 if "title" not in tags or tags["title"] != title:
-                    tags["title"] = title
-                    changed = True
+                    if len(title) > 3:
+                        tags["title"] = title
+                        changed = True
                 if "album" not in tags or tags["album"] != album:
-                    tags["album"] = album
-                    changed = True
+                    if len(album) > 3:
+                        tags["album"] = album
+                        changed = True
                 if "artist" not in tags or tags["artist"] != artist:
-                    tags["artist"] = album
-                    changed = True
+                    if len(artist) > 3:
+                        tags["artist"] = artist
+                        changed = True
 
                 if changed:
                     try:
