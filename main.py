@@ -274,7 +274,10 @@ if __name__ == "__main__":  # Break out the main program
                 os.mkdir(artist_path)
             if not os.path.exists(album_path):
                 os.mkdir(album_path)
-            os.rename(os.path.join(music_path, filename), os.path.join(album_path, filename))
+            try:
+                os.rename(os.path.join(music_path, filename), os.path.join(album_path, filename))
+            except:
+                pass  # Catch file errors.
             processed_files += 1
 
     print(f'MOVED {processed_files} FILES TO FOLDERS')
