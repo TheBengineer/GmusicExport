@@ -109,7 +109,7 @@ if __name__ == "__main__":  # Break out the main program
     last_index = 0
     for file_number, filename in enumerate(mp3_files):
         for search_word in search_grid:
-            if search_word in filename:
+            if search_word in filename[-4:].lower():
                 if len(search_grid[search_word]) == 1:
                     files_dict[filename]["metadata"].add(search_grid[search_word][0])
                 elif len(search_grid[search_word]) > 1:
@@ -152,9 +152,6 @@ if __name__ == "__main__":  # Break out the main program
 
             fuzzed = pool.map(fuzzy2, to_fuzz)
 
-            # title_score = {s: fuzzy(files_dict[s]["tags"]["title"].lower(), title.lower(), ratio_calc=True) for s in presorted if "title" in files_dict[s]["tags"]}
-            # album_score = {s: fuzzy(files_dict[s]["tags"]["album"].lower(), album.lower(), ratio_calc=True) for s in presorted if "album" in files_dict[s]["tags"]}
-            # artist_score = {s: fuzzy(files_dict[s]["tags"]["artist"].lower(), artist.lower(), ratio_calc=True) for s in presorted if "artist" in files_dict[s]["tags"]}
             percentages = {s: 5 - abs((files_dict[s]["duration"] - duration)) for s in presorted if files_dict[s]["duration"]}
 
             decisions = {}
