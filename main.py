@@ -11,6 +11,9 @@ from unsort import unsort
 
 from config import music_path
 
+
+subprocess.check_call([sys.executable, "-m", "pip", "install", "mutagen"])
+
 def cleanup(dirty_text):
     if isinstance(dirty_text, str):
         clean = dirty_text.strip()
