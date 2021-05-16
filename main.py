@@ -1,6 +1,8 @@
 import csv
 import os
 import time
+import sys
+import subprocess
 from multiprocessing import Pool, cpu_count
 
 import mutagen
