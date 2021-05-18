@@ -8,8 +8,8 @@ import pathlib
 import tkinter as tk
 from tkinter import filedialog
 
-import mutagen
-from mutagen.mp3 import EasyMP3 as MP3
+
+
 
 from helpers import fuzzy2
 from unsort import unsort
@@ -57,6 +57,9 @@ if __name__ == "__main__":  # Break out the main program
     decision_matrix = {}
     decision_matrix_inv = {}
     subprocess.check_call([sys.executable, "-m", "pip", "install", "mutagen"])
+
+    import mutagen
+    from mutagen.mp3 import EasyMP3 as MP3
 
     root = tk.Tk()
     root.withdraw()
