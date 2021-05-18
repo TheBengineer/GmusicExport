@@ -53,12 +53,13 @@ if __name__ == "__main__":  # Break out the main program
     decision_matrix = {}
     decision_matrix_inv = {}
 
-    print(f"MOVED {unsort()} FILES BACK TO MAIN FOLDER (IN CASE OF PREVIOUS RUNS)")
+    #print(f"MOVED {unsort()} FILES BACK TO MAIN FOLDER (IN CASE OF PREVIOUS RUNS)")
     # Fix mp3 files Google stripped .mp3 off. Get all files
     mp3_files = [f for f in os.listdir(music_path) if os.path.isfile(os.path.join(music_path, f))]
     for filename in mp3_files:
         if len(filename) < 4 or (filename[-4:].lower() != ".mp3" and filename[-4:] != ".csv"):
-            os.rename(os.path.join(music_path, filename), os.path.join(music_path, f'{filename}.mp3'))
+            pass
+            #os.rename(os.path.join(music_path, filename), os.path.join(music_path, f'{filename}.mp3'))
     mp3_files = [f for f in os.listdir(music_path) if os.path.isfile(os.path.join(music_path, f))]
 
     # Load Metadata
@@ -205,7 +206,7 @@ if __name__ == "__main__":  # Break out the main program
                     #     #decision_matrix[md_index] = {filename: 5.0}
                     #     #decision_matrix_inv[filename] = {md_index: 5.0}
                     #     pass
-            last_time, last_index = status(last_time, sorted_songs, last_index, len(mp3_files), start_time)
+                last_time, last_index = status(last_time, sorted_songs, last_index, len(mp3_files), start_time)
         if not changed:
             break
 

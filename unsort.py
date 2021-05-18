@@ -4,7 +4,6 @@ from config import music_path
 
 def unsort():
     artist_folders = [f for f in os.listdir(music_path) if os.path.isdir(os.path.join(music_path, f))]
-
     files = 0
     for artist_folder_name in artist_folders:
         artist_folder = os.path.join(music_path, artist_folder_name)
