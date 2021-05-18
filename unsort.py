@@ -1,8 +1,7 @@
 import os
 
-from config import music_path
 
-def unsort():
+def unsort(music_path):
     artist_folders = [f for f in os.listdir(music_path) if os.path.isdir(os.path.join(music_path, f))]
     files = 0
     for artist_folder_name in artist_folders:
@@ -22,6 +21,3 @@ def unsort():
             files += 1
     return files
 
-
-if __name__ == "__main__":
-    print(f"Moved {unsort()} files")

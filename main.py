@@ -4,17 +4,16 @@ import time
 import sys
 import subprocess
 from multiprocessing import Pool, cpu_count
+import pathlib
+import tkinter as tk
+from tkinter import filedialog
 
 import mutagen
 from mutagen.mp3 import EasyMP3 as MP3
 
-from helpers import levenshtein_ratio_and_distance as fuzzy, fuzzy2, duration
+from helpers import fuzzy2
 from unsort import unsort
 
-from config import music_path
-
-
-subprocess.check_call([sys.executable, "-m", "pip", "install", "mutagen"])
 
 def cleanup(dirty_text):
     if isinstance(dirty_text, str):
@@ -57,21 +56,30 @@ if __name__ == "__main__":  # Break out the main program
     last_index = 0
     decision_matrix = {}
     decision_matrix_inv = {}
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "mutagen"])
 
-    #print(f"MOVED {unsort()} FILES BACK TO MAIN FOLDER (IN CASE OF PREVIOUS RUNS)")
-    # Fix mp3 files Google stripped .mp3 off. Get all files
-    mp3_files = [f for f in os.listdir(music_path) if os.path.isfile(os.path.join(music_path, f))]
-    for filename in mp3_files:
-        if len(filename) < 4 or (filename[-4:].lower() != ".mp3" and filename[-4:] != ".csv"):
-            pass
-            #os.rename(os.path.join(music_path, filename), os.path.join(music_path, f'{filename}.mp3'))
-    mp3_files = [f for f in os.listdir(music_path) if os.path.isfile(os.path.join(music_path, f))]
+    root = tk.Tk()
+    root.withdraw()
+    metadata_file = filedialog.askopenfilename(filetypes=[('.csvfiles', '.csv')], title='Select the music-uploads-metadata file in the music takeout folder.')
+    music_path = pathlib.Path(metadata_file).parent
+    if not os.path.isfile(os.path.join(music_path, "music-uploads-metadata.csv")):
+        print("COULD NOT FIND MUSIC")
 
     # Load Metadata
     with open(os.path.join(music_path, "music-uploads-metadata.csv"), "r", encoding='utf-8') as music_metadata_file:
         music_metadata_reader = csv.reader(music_metadata_file)
         headers = music_metadata_reader.__next__()
         music_metadata = {md_id: md for md_id, md in enumerate(music_metadata_reader)}
+
+    print(f"MOVED {unsort(music_path)} FILES BACK TO MAIN FOLDER (IN CASE OF PREVIOUS RUNS)")
+    # Fix mp3 files Google stripped .mp3 off. Get all files
+    mp3_files = [f for f in os.listdir(music_path) if os.path.isfile(os.path.join(music_path, f))]
+    for filename in mp3_files:
+        if len(filename) < 4 or (filename[-4:].lower() != ".mp3" and filename[-4:] != ".csv"):
+            os.rename(os.path.join(music_path, filename), os.path.join(music_path, f'{filename}.mp3'))
+    mp3_files = [f for f in os.listdir(music_path) if os.path.isfile(os.path.join(music_path, f))]
+
+
 
     # Generate a dictionary of all files
     files_dict = {filename: {"metadata": set(), "tags": {}, "duration": 0.0} for filename in mp3_files}

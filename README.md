@@ -13,6 +13,8 @@ INSTRUCTIONS:
 
 Install Python 3.8+ (Tested with 3.8 and 3.9.5)
 
-Edit the config file to set the path to your music.
+Run <code>main.py</code> at least twice. Each run through will catch more files. 
 
-Run main.py at least twice. Each run through will catch more files. 
+Between runs, you can add mp3 tags to the remaining files to help the program identify them. 
+
+You may also want to clean up the artists and albums in your <code>music-uploads-metadata.csv</code> file.
