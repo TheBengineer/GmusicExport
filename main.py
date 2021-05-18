@@ -1,6 +1,8 @@
 import csv
 import os
 import time
+import sys
+import subprocess
 from multiprocessing import Pool, cpu_count
 
 import mutagen
@@ -10,6 +12,9 @@ from helpers import levenshtein_ratio_and_distance as fuzzy, fuzzy2, duration
 from unsort import unsort
 
 from config import music_path
+
+
+subprocess.check_call([sys.executable, "-m", "pip", "install", "mutagen"])
 
 def cleanup(dirty_text):
     if isinstance(dirty_text, str):

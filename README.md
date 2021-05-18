@@ -9,6 +9,10 @@ https://takeout.google.com/settings/takeout?pli=1
 This script will move the mp3 files into folders by Artist/Album
 
 
-Edit the config file to set the path to your music. 
+INSTRUCTIONS:
 
-Run the program at least twice. Each run through will catch more files. 
+Install Python 3.8+ (Tested with 3.8 and 3.9.5)
+
+Edit the config file to set the path to your music.
+
+Run main.py at least twice. Each run through will catch more files. 
