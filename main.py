@@ -9,12 +9,6 @@ import tkinter as tk
 from tkinter import filedialog
 
 
-
-
-from helpers import fuzzy2
-from unsort import unsort
-
-
 def cleanup(dirty_text):
     if isinstance(dirty_text, str):
         clean = dirty_text.strip()
@@ -56,10 +50,15 @@ if __name__ == "__main__":  # Break out the main program
     last_index = 0
     decision_matrix = {}
     decision_matrix_inv = {}
+
     subprocess.check_call([sys.executable, "-m", "pip", "install", "mutagen"])
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "numpy"])
 
     import mutagen
     from mutagen.mp3 import EasyMP3 as MP3
+
+    from helpers import fuzzy2
+    from unsort import unsort
 
     root = tk.Tk()
     root.withdraw()
