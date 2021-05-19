@@ -9,14 +9,20 @@ import tkinter as tk
 from tkinter import filedialog
 
 
-def cleanup(dirty_text):
+def cleanup(dirty_text, replace_str="_"):
     if isinstance(dirty_text, str):
         clean = dirty_text.strip()
-        fix = [[":", "_"],
-               ["'", "_"],
-               ['"', "_"],
-               ["/", "_"],
-               [";", "_"], ]
+        fix = [[":", replace_str],
+               ["'", replace_str],
+               ['"', replace_str],
+               ["/", replace_str],
+               ["\\", replace_str],
+               ["?", replace_str],
+               ["*", replace_str],
+               ["<", replace_str],
+               [">", replace_str],
+               ["|", replace_str],
+               [";", replace_str], ]
         for a, b in fix:
             clean = clean.replace(a, b)
         return clean
@@ -283,8 +289,8 @@ if __name__ == "__main__":  # Break out the main program
             artist = files_dict[filename]["tags"]["artist"]
 
         if artist and album:
-            artist_path = os.path.join(music_path, cleanup(artist))
-            album_path = os.path.join(music_path, cleanup(artist), cleanup(album))
+            artist_path = os.path.join(music_path, cleanup(artist, ""))
+            album_path = os.path.join(music_path, cleanup(artist, ""), cleanup(album, ""))
 
             if not os.path.exists(artist_path):
                 os.mkdir(artist_path)
