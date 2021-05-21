@@ -289,17 +289,19 @@ if __name__ == "__main__":  # Break out the main program
             artist = files_dict[filename]["tags"]["artist"]
 
         if artist and album:
-            artist_path = os.path.join(music_path, cleanup(artist, ""))
-            album_path = os.path.join(music_path, cleanup(artist, ""), cleanup(album, ""))
+            artist_path = os.path.join(music_path, cleanup(artist, "")[50:])
+            album_path = os.path.join(music_path, cleanup(artist, ""), cleanup(album, "")[50:])
 
-            if not os.path.exists(artist_path):
-                os.mkdir(artist_path)
-            if not os.path.exists(album_path):
-                os.mkdir(album_path)
+
             try:
+                if not os.path.exists(artist_path):
+                    os.mkdir(artist_path)
+                if not os.path.exists(album_path):
+                    os.mkdir(album_path)
                 os.rename(os.path.join(music_path, filename), os.path.join(album_path, filename))
-            except:
-                pass  # Catch file errors.
+            except Exception as e:
+                print(e)
+                # Catch file errors.
             processed_files += 1
 
     print(f'MOVED {processed_files} FILES TO FOLDERS')
