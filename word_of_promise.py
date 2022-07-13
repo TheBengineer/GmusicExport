@@ -31,9 +31,16 @@ class Tracks:
         tracks.append(
             [f"Hebrews {i}" for i in range(10, 14)] +
             [f"James {i}" for i in range(1, 6)] +
-            [f"Titus {i}" for i in range(1, 4)] +
-            [f"Philemon {i}" for i in range(1, 2)] +
-            [f"Hebrews {i}" for i in range(1, 10)])
+            [f"1 Peter {i}" for i in range(1, 6)] +
+            [f"2 Peter {i}" for i in range(1, 4)])
+        tracks.append(
+            [f"1 John {i}" for i in range(1, 6)] +
+            [f"2 john {i}" for i in range(1, 2)] +
+            [f"3 John {i}" for i in range(1, 2)] +
+            [f"Jude {i}" for i in range(1, 2)] +
+            [f"Revelation {i}" for i in range(1, 11)])
+        tracks.append(
+            [f"Revelation {i}" for i in range(11, 23)] )
         self.tracks = tracks
 
     def __str__(self):
