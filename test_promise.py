@@ -9,4 +9,8 @@ class TestTracks(unittest.TestCase):
 
     def test_all_tracks(self):
         tracks = self.t.tracks
-        print(tracks)
+        for track in tracks:
+            # print("-------")
+            pass
+        for title in track:
+            print(title)
