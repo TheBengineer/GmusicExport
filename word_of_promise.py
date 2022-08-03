@@ -1,3 +1,8 @@
+import os
+
+from mutagen.mp3 import EasyMP3 as MP3
+
+
 class Tracks:
     def __init__(self):
         tracks = []
@@ -40,11 +45,23 @@ class Tracks:
             [f"Jude {i}" for i in range(1, 2)] +
             [f"Revelation {i}" for i in range(1, 11)])
         tracks.append(
-            [f"Revelation {i}" for i in range(11, 23)] )
+            [f"Revelation {i}" for i in range(11, 23)])
         self.tracks = tracks
 
     def __str__(self):
         return str(self.tracks)
+
+
+class Metadata:
+    def __init__(self):
+        self.tracks = Tracks()
+        self.music_path = "./music"
+
+    def set_file_metadata(self, filename, title):
+        album = "Word of Promise"
+        artist = "The Word of Promise"
+        year = "2020"
+        mp3_data = MP3(os.path.join(self.music_path, filename))
 
 
 if __name__ == "__main__":
