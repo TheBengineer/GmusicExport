@@ -75,12 +75,13 @@ class Metadata:
 
     @staticmethod
     def convert_to_mp3(filename, output_filename):
-        wav_file = AudioSegment.from_file(filename)
         print(f"exporting {output_filename}")
-        folder, filename = os.path.split(output_filename)
-        if not os.path.isdir(folder):
-            os.makedirs(folder, exist_ok=True)
-        wav_file.export(output_filename, format="mp3")
+        if not os.path.isfile(output_filename):
+            wav_file = AudioSegment.from_file(filename)
+            folder, filename = os.path.split(output_filename)
+            if not os.path.isdir(folder):
+                os.makedirs(folder, exist_ok=True)
+            wav_file.export(output_filename, format="mp3")
 
     def set_file_metadata(self, filename, disk_id, title):
         album = "New Testament"
