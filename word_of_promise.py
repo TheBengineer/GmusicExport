@@ -1,6 +1,7 @@
 import os
 
 from mutagen.mp3 import EasyMP3 as MP3
+from pydub import AudioSegment
 
 
 class Tracks:
@@ -68,6 +69,7 @@ class Metadata:
         return os.path.join(self.music_path, f"Disk {cd_id}\\{track_id}.wav")
 
     def convert_to_mp3(self, filename, track_name):
+        AudioSegment.from_file("/input/file").export("/output/file", format="mp3")
         os.system(f"ffmpeg -i {os.path.join(self.music_path, filename)} {os.path.join(self.music_path, filename.replace('.mp3', '.wav'))}")
         os.system(f"ffmpeg -i {os.path.join(self.music_path, filename.replace('.mp3', '.wav'))} {os.path.join(self.music_path, filename)}")
         os.system(f"rm {os.path.join(self.music_path, filename.replace('.mp3', '.wav'))}")
