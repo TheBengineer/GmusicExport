@@ -83,17 +83,13 @@ class Metadata:
         wav_file.export(output_filename, format="mp3")
 
     def set_file_metadata(self, filename, disk_id, title):
-        album = "Word of Promise"
+        album = "New Testament"
         artist = "The Word of Promise"
-        year = "2020"
-        disk = f"Disk {disk_id}"
         try:
             mp3_data = MP3(os.path.join(self.music_path, filename))
             mp3_data["title"] = title
             mp3_data["album"] = album
             mp3_data["artist"] = artist
-            mp3_data["year"] = year
-            mp3_data["disk"] = disk
             mp3_data.save()
         except mutagen.mp3.HeaderNotFoundError:
             pass
