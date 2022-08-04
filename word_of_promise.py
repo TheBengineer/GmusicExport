@@ -75,7 +75,8 @@ class Metadata:
 
     @staticmethod
     def convert_to_mp3(filename, output_filename):
-        AudioSegment.from_file(filename).export(output_filename, format="mp3")
+        wav_file = AudioSegment.from_file(filename)
+        wav_file.export(output_filename, format="mp3")
 
     def set_file_metadata(self, filename, disk_id, title):
         album = "Word of Promise"
