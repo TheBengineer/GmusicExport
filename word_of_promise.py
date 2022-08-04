@@ -57,6 +57,20 @@ class Metadata:
         self.tracks = Tracks()
         self.music_path = "./music"
 
+    def process_all_files(self):
+        for cd_id, cd_track in enumerate(self.tracks.tracks):
+            for track_id, track in enumerate(cd_track):
+                self.convert_to_mp3(cd_id, track_id, track)
+                self.set_file_metadata(track, track)
+
+    def get_filename(self, cd_id, track_id):
+        return os.path.join(self.music_path, f"{cd_id}-{track_id}.wav")
+
+    def convert_to_mp3(self, cd_id, track_id, track):
+        os.system(f"ffmpeg -i {os.path.join(self.music_path, filename)} {os.path.join(self.music_path, filename.replace('.mp3', '.wav'))}")
+        os.system(f"ffmpeg -i {os.path.join(self.music_path, filename.replace('.mp3', '.wav'))} {os.path.join(self.music_path, filename)}")
+        os.system(f"rm {os.path.join(self.music_path, filename.replace('.mp3', '.wav'))}")
+
     def set_file_metadata(self, filename, title):
         album = "Word of Promise"
         artist = "The Word of Promise"
