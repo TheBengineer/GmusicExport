@@ -63,7 +63,7 @@ class Metadata:
         for cd_id, cd_track in enumerate(self.tracks.tracks, start=1):
             for track_id, track in enumerate(cd_track, start=1):
                 filename = self.get_wav_filename(cd_id, track_id)
-                mp3_filename = self.generate_mp3_filename(cd_id, track_id)
+                mp3_filename = self.generate_mp3_filename(cd_id, track)
                 self.convert_to_mp3(filename, mp3_filename)
                 self.set_file_metadata(mp3_filename, cd_id, track)
 
