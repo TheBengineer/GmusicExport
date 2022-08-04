@@ -1,5 +1,6 @@
 import os
 
+import mutagen
 from mutagen.mp3 import EasyMP3 as MP3
 from pydub import AudioSegment
 
@@ -61,21 +62,36 @@ class Metadata:
     def process_all_files(self):
         for cd_id, cd_track in enumerate(self.tracks.tracks, start=1):
             for track_id, track in enumerate(cd_track, start=1):
-                filename = self.get_filename(cd_id, track_id)
-                self.convert_to_mp3(filename, track)
+                filename = self.get_wav_filename(cd_id, track_id)
+                mp3_filename = self.generate_mp3_filename(cd_id, track_id)
+                self.convert_to_mp3(filename, mp3_filename)
                 self.set_file_metadata(track, track)
 
-    def get_filename(self, cd_id, track_id):
-        return os.path.join(self.music_path, f"Disk {cd_id}\\{track_id}.wav")
+    def get_wav_filename(self, cd_id, track_id):
+        return os.path.join(self.music_path, f"Disk {cd_id}\\Track {track_id}.wav")
 
-    def convert_to_mp3(self, filename, output_filename):
+    def generate_mp3_filename(self, cd_id, track_name):
+        return os.path.join(self.music_path, f"Disk {cd_id}\\{track_name}.mp3")
+
+    @staticmethod
+    def convert_to_mp3(filename, output_filename):
         AudioSegment.from_file(filename).export(output_filename, format="mp3")
 
-    def set_file_metadata(self, filename, title):
+    def set_file_metadata(self, filename, disk_id, title):
         album = "Word of Promise"
         artist = "The Word of Promise"
         year = "2020"
-        mp3_data = MP3(os.path.join(self.music_path, filename))
+        disk = f"Disk {disk_id}"
+        try:
+            mp3_data = MP3(os.path.join(self.music_path, filename))
+            mp3_data["title"] = title
+            mp3_data["album"] = album
+            mp3_data["artist"] = artist
+            mp3_data["year"] = year
+            mp3_data["disk"] = disk
+            mp3_data.save()
+        except mutagen.mp3.HeaderNotFoundError:
+            pass
 
 
 if __name__ == "__main__":
