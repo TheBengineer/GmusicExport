@@ -71,11 +71,15 @@ class Metadata:
         return os.path.join(self.music_path, f"Disk {cd_id}\\{track_id:02} Track{track_id:02}.wav")
 
     def generate_mp3_filename(self, cd_id, track_name):
-        return os.path.join(self.music_path, f"Disk {cd_id}\\{track_name}.mp3")
+        return os.path.join(self.music_path, f"Export\\Disk {cd_id}\\{track_name}.mp3")
 
     @staticmethod
     def convert_to_mp3(filename, output_filename):
         wav_file = AudioSegment.from_file(filename)
+        print(f"exporting {output_filename}")
+        folder, filename = os.path.split(output_filename)
+        if not os.path.isdir(folder):
+            os.makedirs(folder, exist_ok=True)
         wav_file.export(output_filename, format="mp3")
 
     def set_file_metadata(self, filename, disk_id, title):
@@ -100,3 +104,5 @@ if __name__ == "__main__":
     print(t)
     m = Metadata()
     m.process_all_files()
+    # wav_file = AudioSegment.from_file("D:\\The Word Of Promise\\Disk 1\\01 Track01.wav")
+    # wav_file.export("D:\\test.mp3", format="mp3")
