@@ -65,10 +65,10 @@ class Metadata:
                 filename = self.get_wav_filename(cd_id, track_id)
                 mp3_filename = self.generate_mp3_filename(cd_id, track_id)
                 self.convert_to_mp3(filename, mp3_filename)
-                self.set_file_metadata(track, track)
+                self.set_file_metadata(mp3_filename, cd_id, track)
 
     def get_wav_filename(self, cd_id, track_id):
-        return os.path.join(self.music_path, f"Disk {cd_id}\\Track {track_id}.wav")
+        return os.path.join(self.music_path, f"Disk {cd_id}\\{track_id:02} Track{track_id:02}.wav")
 
     def generate_mp3_filename(self, cd_id, track_name):
         return os.path.join(self.music_path, f"Disk {cd_id}\\{track_name}.mp3")
@@ -97,3 +97,5 @@ class Metadata:
 if __name__ == "__main__":
     t = Tracks()
     print(t)
+    m = Metadata()
+    m.process_all_files()
