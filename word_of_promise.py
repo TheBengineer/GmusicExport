@@ -55,18 +55,19 @@ class Tracks:
 class Metadata:
     def __init__(self):
         self.tracks = Tracks()
-        self.music_path = "./music"
+        self.music_path = "D:\\The Word of Promise"
 
     def process_all_files(self):
-        for cd_id, cd_track in enumerate(self.tracks.tracks):
-            for track_id, track in enumerate(cd_track):
-                self.convert_to_mp3(cd_id, track_id, track)
+        for cd_id, cd_track in enumerate(self.tracks.tracks, start=1):
+            for track_id, track in enumerate(cd_track, start=1):
+                filename = self.get_filename(cd_id, track_id)
+                self.convert_to_mp3(filename, track)
                 self.set_file_metadata(track, track)
 
     def get_filename(self, cd_id, track_id):
-        return os.path.join(self.music_path, f"{cd_id}-{track_id}.wav")
+        return os.path.join(self.music_path, f"Disk {cd_id}\\{track_id}.wav")
 
-    def convert_to_mp3(self, cd_id, track_id, track):
+    def convert_to_mp3(self, filename, track_name):
         os.system(f"ffmpeg -i {os.path.join(self.music_path, filename)} {os.path.join(self.music_path, filename.replace('.mp3', '.wav'))}")
         os.system(f"ffmpeg -i {os.path.join(self.music_path, filename.replace('.mp3', '.wav'))} {os.path.join(self.music_path, filename)}")
         os.system(f"rm {os.path.join(self.music_path, filename.replace('.mp3', '.wav'))}")
