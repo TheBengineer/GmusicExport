@@ -92,7 +92,7 @@ if __name__ == "__main__":  # Break out the main program
     root = tk.Tk()
     root.withdraw()
     metadata_file = filedialog.askopenfilename(filetypes=[('.csvfiles', '.csv')],
-                                               title='Select the music-uploads-metadata file in the music takeout folder.')
+                                               title='Select the music-uploads-metadata.csv file in the music takeout folder.')
     music_path = pathlib.Path(metadata_file).parent
     if not os.path.isfile(os.path.join(music_path, "music-uploads-metadata.csv")):
         print("COULD NOT FIND MUSIC")
@@ -105,7 +105,7 @@ if __name__ == "__main__":  # Break out the main program
 
     print(f"MOVED {unsort(music_path)} FILES BACK TO MAIN FOLDER (IN CASE OF PREVIOUS RUNS)")
     # Fix mp3 files Google stripped .mp3 off. Get all files
-    mp3_files = [f for f in os.listdir(music_path) if os.path.isfile(os.path.join(music_path, f))]
+    mp3_files = [f for f in os.listdir(music_path) if os.path.isfile(os.path.join(music_path, f)) and ".csv" not in f]
     for filename in mp3_files:
         if len(filename) < 4 or (filename[-4:].lower() != ".mp3" and filename[-4:] != ".csv"):
             os.rename(os.path.join(music_path, filename), os.path.join(music_path, f'{filename}.mp3'))
