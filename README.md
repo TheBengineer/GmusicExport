@@ -9,7 +9,7 @@ It uses the metadata from the csv file to sort the music into folders by Artist/
       ![export1.PNG](images%2Fexport1.PNG)
    3. Select only music related exports
       ![export2.PNG](images%2Fexport2.PNG)
-      ![export3.PNG](images%2Fexport 3.PNG)
+      ![export3.PNG](images%2Fexport3.PNG)
 
 2. Download your music from Google Takeout
 3. Install Python 3.8+ (Tested with 3.8, 3.9.5, 3.11.0, 3.12.0)
