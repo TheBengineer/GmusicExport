@@ -11,7 +11,7 @@ This script will move the mp3 files into folders by Artist/Album
 
 INSTRUCTIONS:
 
-Install Python 3.8+ (Tested with 3.8 and 3.9.5)
+Install Python 3.8+ (Tested with 3.8, 3.9.5, 3.11.0, 3.12.0)
 
 Run <code>main.py</code> at least twice. Each run through will catch more files. 
 
