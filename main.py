@@ -48,6 +48,26 @@ def status(l_time, current_index, l_index, total, process_start_time):
     return l_time, l_index
 
 
+def generate_files_dictionary(mp3_files, last_time, last_index, start_time):
+    # Generate a dictionary of all files
+    files_dict = {filename: {"metadata": set(), "tags": {}, "duration": 0.0} for filename in mp3_files}
+
+    # Load durations from all files.
+    print("LOADING MP3 FILE METADATA AND DURATIONS")
+    for md_index, mp3_filename in enumerate(mp3_files):
+        last_time, last_index = status(last_time, md_index, last_index, len(mp3_files), start_time)
+        try:
+            mp3_data = MP3(os.path.join(music_path, mp3_filename))
+            files_dict[mp3_filename]["duration"] = mp3_data.info.length
+            tag_data = mp3_data.ID3.items(mp3_data)
+            for field, data in tag_data:
+                files_dict[mp3_filename]["tags"][field] = data[-1]
+        except mutagen.mp3.HeaderNotFoundError:
+            files_dict[mp3_filename]["duration"] = 0
+            pass  # Skip non MP3 Files
+    return files_dict
+
+
 if __name__ == "__main__":  # Break out the main program
     core_count = max(cpu_count(), 1)
     pool = Pool(core_count)
@@ -68,7 +88,8 @@ if __name__ == "__main__":  # Break out the main program
 
     root = tk.Tk()
     root.withdraw()
-    metadata_file = filedialog.askopenfilename(filetypes=[('.csvfiles', '.csv')], title='Select the music-uploads-metadata file in the music takeout folder.')
+    metadata_file = filedialog.askopenfilename(filetypes=[('.csvfiles', '.csv')],
+                                               title='Select the music-uploads-metadata file in the music takeout folder.')
     music_path = pathlib.Path(metadata_file).parent
     if not os.path.isfile(os.path.join(music_path, "music-uploads-metadata.csv")):
         print("COULD NOT FIND MUSIC")
@@ -87,24 +108,7 @@ if __name__ == "__main__":  # Break out the main program
             os.rename(os.path.join(music_path, filename), os.path.join(music_path, f'{filename}.mp3'))
     mp3_files = [f for f in os.listdir(music_path) if os.path.isfile(os.path.join(music_path, f))]
 
-
-
-    # Generate a dictionary of all files
-    files_dict = {filename: {"metadata": set(), "tags": {}, "duration": 0.0} for filename in mp3_files}
-
-    # Load durations from all files.
-    print("LOADING MP3 FILE METADATA AND DURATIONS")
-    for md_index, mp3_filename in enumerate(mp3_files):
-        last_time, last_index = status(last_time, md_index, last_index, len(mp3_files), start_time)
-        try:
-            mp3_data = MP3(os.path.join(music_path, mp3_filename))
-            files_dict[mp3_filename]["duration"] = mp3_data.info.length
-            tag_data = mp3_data.ID3.items(mp3_data)
-            for field, data in tag_data:
-                files_dict[mp3_filename]["tags"][field] = data[-1]
-        except mutagen.mp3.HeaderNotFoundError:
-            files_dict[mp3_filename]["duration"] = 0
-            pass  # Skip non MP3 Files
+    generate_files_dictionary(mp3_files, last_time, last_index, start_time)
 
     print("BUILDING METADATA <-> FILE MATCH MATRIX")
     search_grid = {}
@@ -174,7 +178,8 @@ if __name__ == "__main__":  # Break out the main program
 
             fuzzed = pool.map(fuzzy2, to_fuzz)
 
-            percentages = {s: 5 - abs((files_dict[s]["duration"] - duration)) for s in presorted if files_dict[s]["duration"]}
+            percentages = {s: 5 - abs((files_dict[s]["duration"] - duration)) for s in presorted if
+                           files_dict[s]["duration"]}
 
             decisions = {}
             for filename in presorted:
@@ -291,7 +296,6 @@ if __name__ == "__main__":  # Break out the main program
         if artist and album:
             artist_path = os.path.join(music_path, cleanup(artist, "")[50:])
             album_path = os.path.join(music_path, cleanup(artist, ""), cleanup(album, "")[50:])
-
 
             try:
                 if not os.path.exists(artist_path):
