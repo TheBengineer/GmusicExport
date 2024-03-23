@@ -111,7 +111,7 @@ if __name__ == "__main__":  # Break out the main program
             os.rename(os.path.join(music_path, filename), os.path.join(music_path, f'{filename}.mp3'))
     mp3_files = [f for f in os.listdir(music_path) if os.path.isfile(os.path.join(music_path, f))]
 
-    generate_files_dictionary(mp3_files, last_time, last_index, start_time, music_path)
+    files_dict = generate_files_dictionary(mp3_files, last_time, last_index, start_time, music_path)
 
     print("BUILDING METADATA <-> FILE MATCH MATRIX")
     search_grid = {}
@@ -301,10 +301,7 @@ if __name__ == "__main__":  # Break out the main program
             album_path = os.path.join(music_path, cleanup(artist, ""), cleanup(album, "")[50:])
 
             try:
-                if not os.path.exists(artist_path):
-                    os.mkdir(artist_path)
-                if not os.path.exists(album_path):
-                    os.mkdir(album_path)
+                os.makedirs(album_path, exist_ok=True)
                 os.rename(os.path.join(music_path, filename), os.path.join(album_path, filename))
             except Exception as e:
                 print(e)
