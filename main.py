@@ -302,7 +302,8 @@ if __name__ == "__main__":  # Break out the main program
 
             try:
                 os.makedirs(album_path, exist_ok=True)
-                os.rename(os.path.join(music_path, filename), os.path.join(album_path, filename))
+                if ".csv" not in filename:
+                    os.rename(os.path.join(music_path, filename), os.path.join(album_path, filename))
             except Exception as e:
                 print(e)
                 # Catch file errors.
