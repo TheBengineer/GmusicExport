@@ -31,7 +31,7 @@ def cleanup(dirty_text, replace_str="_"):
 
 def status(l_time, current_index, l_index, total, process_start_time):
     now = time.time()
-    if now - last_time > .5:
+    if now - l_time > .5:
         percent = (float(current_index) / total) * 100.0
         bar = f"[{'#' * int(percent / 2.0)}{'-' * int((100 - percent) / 2.0)}]"
         try:
@@ -48,7 +48,9 @@ def status(l_time, current_index, l_index, total, process_start_time):
     return l_time, l_index
 
 
-def generate_files_dictionary(mp3_files, last_time, last_index, start_time):
+def generate_files_dictionary(mp3_files, last_time, last_index, start_time, music_path=""):
+    import mutagen
+    from mutagen.mp3 import EasyMP3 as MP3
     # Generate a dictionary of all files
     files_dict = {filename: {"metadata": set(), "tags": {}, "duration": 0.0} for filename in mp3_files}
 
@@ -61,7 +63,8 @@ def generate_files_dictionary(mp3_files, last_time, last_index, start_time):
             files_dict[mp3_filename]["duration"] = mp3_data.info.length
             tag_data = mp3_data.ID3.items(mp3_data)
             for field, data in tag_data:
-                files_dict[mp3_filename]["tags"][field] = data[-1]
+                if len(data) > 0:
+                    files_dict[mp3_filename]["tags"][field] = data[-1]
         except mutagen.mp3.HeaderNotFoundError:
             files_dict[mp3_filename]["duration"] = 0
             pass  # Skip non MP3 Files
@@ -108,7 +111,7 @@ if __name__ == "__main__":  # Break out the main program
             os.rename(os.path.join(music_path, filename), os.path.join(music_path, f'{filename}.mp3'))
     mp3_files = [f for f in os.listdir(music_path) if os.path.isfile(os.path.join(music_path, f))]
 
-    generate_files_dictionary(mp3_files, last_time, last_index, start_time)
+    generate_files_dictionary(mp3_files, last_time, last_index, start_time, music_path)
 
     print("BUILDING METADATA <-> FILE MATCH MATRIX")
     search_grid = {}
