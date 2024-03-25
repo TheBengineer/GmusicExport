@@ -297,8 +297,8 @@ if __name__ == "__main__":  # Break out the main program
             artist = files_dict[filename]["tags"]["artist"]
 
         if artist and album:
-            artist_path = os.path.join(music_path, cleanup(artist, "")[50:])
-            album_path = os.path.join(music_path, cleanup(artist, ""), cleanup(album, "")[50:])
+            artist_path = os.path.join(music_path, cleanup(artist, "")[:80])
+            album_path = os.path.join(music_path, cleanup(artist, ""), cleanup(album, "")[:80])
 
             try:
                 os.makedirs(album_path, exist_ok=True)
