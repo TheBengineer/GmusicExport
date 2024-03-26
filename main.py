@@ -33,7 +33,10 @@ def status(l_time, current_index, l_index, total, process_start_time):
     now = time.time()
     if now - l_time > .5:
         percent = (float(current_index) / total) * 100.0
-        bar = f"[{'#' * int(percent / 2.0)}{'-' * int((100 - percent) / 2.0)}]"
+        bar_length = 50
+        done_length = int(bar_length * (percent / 100.0))
+        remaining_length = bar_length - done_length
+        bar = f"[{'#' * done_length}{'-' * remaining_length}]"
         try:
             guess_seconds_total = (total / current_index) * (now - process_start_time)
             guess_seconds = guess_seconds_total - (now - process_start_time)
